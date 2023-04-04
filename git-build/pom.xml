@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>git</artifactId>
+        <groupId>com.axone_io.ignition</groupId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>git-build</artifactId>
+
+    <properties>
+        <timeZone>Europe/Paris</timeZone>
+        <timeZone>
+            UTC+2
+        </timeZone>
+        <locale>fr_FR</locale>
+        <maven.build.timestamp.format>yyyyMMddHH</maven.build.timestamp.format>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.axone_io.ignition</groupId>
+            <artifactId>git-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.axone_io.ignition</groupId>
+            <artifactId>git-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.axone_io.ignition</groupId>
+            <artifactId>git-designer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.axone_io.ignition</groupId>
+            <artifactId>git-gateway</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.inductiveautomation.ignitionsdk</groupId>
+                <artifactId>ignition-maven-plugin</artifactId>
+                <version>1.1.0</version>
+
+                <executions>
+                    <execution>
+                        <id>package-modl</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>modl</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <projectScopes>
+                        <projectScope>
+                            <name>git-client</name>
+                            <scope>C</scope>
+                        </projectScope>
+                        <projectScope>
+                            <name>git-common</name>
+                            <scope>CDG</scope>
+                        </projectScope>
+                        <projectScope>
+                            <name>git-designer</name>
+                            <scope>CD</scope>
+                        </projectScope>
+                        <projectScope>
+                            <name>git-gateway</name>
+                            <scope>G</scope>
+                        </projectScope>
+                    </projectScopes>
+
+                    <moduleId>com.axone_io.ignition.git</moduleId>
+                    <moduleName>${module-name}</moduleName>
+                    <moduleDescription>${module-description}</moduleDescription>
+                    <moduleVersion>${project.parent.version}.${maven.build.timestamp}</moduleVersion>
+                    <requiredIgnitionVersion>${ignition-platform-version}</requiredIgnitionVersion>
+                    <licenseFile>license.html</licenseFile>
+
+                    <hooks>
+                        <hook>
+                            <scope>C</scope>
+                            <hookClass>com.axone_io.ignition.git.ClientHook</hookClass>
+                        </hook>
+                        <hook>
+                            <scope>D</scope>
+                            <hookClass>com.axone_io.ignition.git.DesignerHook</hookClass>
+                        </hook>
+                        <hook>
+                            <scope>G</scope>
+                            <hookClass>com.axone_io.ignition.git.GatewayHook</hookClass>
+                        </hook>
+                    </hooks>
+
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wicket="http://wicket.sourceforge.net/">
+<body>
+<wicket:extend>
+
+    <table wicket:id="table" class="actiontable" cellpadding="0"
+           cellspacing="0">
+        <thead>
+        <tr>
+            <td wicket:id="field-header">Field</td>
+            <td class="action"></td>
+        </tr>
+        </thead>
+
+        <tbody id="actiontable-tbody">
+        <tr wicket:id="rows">
+            <td class="letterbreak" wicket:id="field">XYZ</td>
+            <td class="action-btn-cell" wicket:id="actions">
+
+            </td>
+        </tr>
+        <tr wicket:id="norows">
+            <td wicket:id="norows-cell" class="last"></td>
+            <td class="action">&nbsp;</td>
+        </tr>
+        </tbody>
+
+    </table>
+
+    <ul class="actionlinks">
+        <li wicket:id="record-action" id="pageActionLink"></li>
+    </ul>
+
+    <div wicket:id="footer"/>
+</wicket:extend>
+
+</body>
+</html>
