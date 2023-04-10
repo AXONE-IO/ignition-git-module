@@ -11,24 +11,19 @@ import com.inductiveautomation.ignition.designer.gui.DesignerToolbar;
 import com.inductiveautomation.ignition.designer.gui.StatusBar;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
-import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.inductiveautomation.ignition.designer.model.AbstractDesignerModuleHook;
 import com.inductiveautomation.ignition.designer.model.SaveContext;
 import com.jidesoft.action.DockableBarManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.Timer;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
-import static com.axone_io.ignition.git.managers.GitActionManager.handleCommitPopup;
+import static com.axone_io.ignition.git.managers.GitActionManager.showCommitPopup;
 
 public class DesignerHook extends AbstractDesignerModuleHook {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     public static GitScriptInterface rpc = ModuleRPCFactory.create(
             "com.axone_io.ignition.git",
             GitScriptInterface.class
@@ -116,7 +111,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     public void notifyProjectSaveDone(){
         super.notifyProjectSaveDone();
 
-        handleCommitPopup(projectName, userName);
+        showCommitPopup(projectName, userName);
     }
 
     @Override

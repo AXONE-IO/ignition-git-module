@@ -48,12 +48,11 @@ public class CommitPopup extends JFrame {
 
         String[] columnNames = {"", "Resource Name", "Type", "Author"};
 
-
         DefaultTableModel model = new DefaultTableModel(data, columnNames) {
             public Class<?> getColumnClass(int column) {
                 switch (column) {
                     case 0:
-                        return Boolean.class;
+                        return boolean.class;
                     case 1:
                     case 2:
                     case 3:
@@ -75,7 +74,7 @@ public class CommitPopup extends JFrame {
 
         commitBtn.addActionListener(e -> {
             List<String> changes = new ArrayList<>();
-            for (Integer i = 0; i < changesTable.getModel().getRowCount(); i++) {
+            for (int i = 0; i < changesTable.getModel().getRowCount(); i++) {
                 if ((Boolean) changesTable.getValueAt(i, 0)) {
                     changes.add((String) changesTable.getValueAt(i, 1));
                 }
@@ -86,7 +85,6 @@ public class CommitPopup extends JFrame {
         });
 
         cancelBtn.addActionListener(e -> this.dispose());
-
 
         pack();
         CommonUI.centerComponent(this, parent);
