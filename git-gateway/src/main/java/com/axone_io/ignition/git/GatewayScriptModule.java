@@ -116,13 +116,13 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
-            uncommittedChangesBuilder(projectPath, missing, "Deleted", changes, builder);
+            uncommittedChangesBuilder(projectName, missing, "Deleted", changes, builder);
 
             Set<String> uncommittedChanges = status.getUncommittedChanges();
-            uncommittedChangesBuilder(projectPath, uncommittedChanges, "Uncommitted", changes, builder);
+            uncommittedChangesBuilder(projectName, uncommittedChanges, "Uncommitted", changes, builder);
 
             Set<String> untracked = status.getUntracked();
-            uncommittedChangesBuilder(projectPath, untracked, "Created", changes, builder);
+            uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
             git.close();
         } catch (Exception e) {
@@ -177,6 +177,6 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
     private Path getProjectFolderPath(String projectName) {
         Path dataDir = context.getSystemManager().getDataDir().toPath();
-        return dataDir.resolve("data").resolve("projects").resolve(projectName);
+        return dataDir.resolve("projects").resolve(projectName);
     }
 }

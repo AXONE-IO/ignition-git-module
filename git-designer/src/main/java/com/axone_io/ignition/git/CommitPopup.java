@@ -52,7 +52,7 @@ public class CommitPopup extends JFrame {
             public Class<?> getColumnClass(int column) {
                 switch (column) {
                     case 0:
-                        return boolean.class;
+                        return Boolean.class;
                     case 1:
                     case 2:
                     case 3:

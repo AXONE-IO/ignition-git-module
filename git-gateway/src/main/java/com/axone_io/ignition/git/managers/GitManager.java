@@ -17,9 +17,8 @@ import com.inductiveautomation.ignition.common.gson.Gson;
 import com.inductiveautomation.ignition.common.gson.GsonBuilder;
 import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
-import com.inductiveautomation.ignition.common.project.resource.ImmutableProjectResource;
-import com.inductiveautomation.ignition.common.project.resource.LastModification;
-import com.inductiveautomation.ignition.common.project.resource.ProjectResource;
+import com.inductiveautomation.ignition.common.project.RuntimeProject;
+import com.inductiveautomation.ignition.common.project.resource.*;
 import com.inductiveautomation.ignition.common.tags.TagUtilities;
 import com.inductiveautomation.ignition.common.tags.config.TagConfigurationModel;
 import com.inductiveautomation.ignition.common.tags.model.TagPath;
@@ -29,6 +28,7 @@ import com.inductiveautomation.ignition.common.util.DatasetBuilder;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.images.ImageManager;
 import com.inductiveautomation.ignition.gateway.images.ImageRecord;
+import com.inductiveautomation.ignition.gateway.project.ProjectManager;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.TransportCommand;
@@ -205,24 +205,25 @@ public class GitManager {
         return new SshTransportConfigCallback(user.getSSHKey());
     }
 
-    public static void uncommittedChangesBuilder(Path projectPath,
+    public static void uncommittedChangesBuilder(String projectName,
                                                  Set<String> updates,
                                                  String type,
                                                  List<String> changes,
                                                  DatasetBuilder builder) throws IOException {
         for (String update : updates) {
             String[] rowData = new String[3];
-
+            String actor = "unknown";
             String path = update;
             if (hasActor(path)) {
                 String[] pathSplitted = update.split("/");
                 path = String.join("/", Arrays.copyOf(pathSplitted, pathSplitted.length - 1));
+                actor = getActor(projectName, path);
             }
 
             rowData[0] = path;
             rowData[1] = type;
             if (!changes.contains(path)) {
-                rowData[2] = getActor(projectPath.resolve(path));
+                rowData[2] = actor;
                 changes.add(path);
                 builder.addRow((Object[]) rowData);
             }
@@ -241,10 +242,27 @@ public class GitManager {
         return hasActor;
     }
 
-    public static String getActor(Path path) throws IOException {
-        ProjectResource resource =
-            PROJECT_GSON.fromJson(Files.readString(path.resolve("resource.json")), ProjectResource.class);
-        return LastModification.of(resource)
-            .map(LastModification::getActor).orElse("unknown");
+    public static String getActor(String projectName, String path) {
+        ProjectManager projectManager = context.getProjectManager();
+        RuntimeProject project =projectManager.getProject(projectName).get();
+
+        ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
+        String actor = LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");;
+
+        return actor;
+    }
+
+
+    public static ResourcePath getResourcePath(String resourcePath){
+        String moduleId = "";
+        String typeId = "";
+        String resource = "";
+        String[] paths = resourcePath.split("/");
+
+        if (paths.length >0) moduleId = paths[0];
+        if (paths.length >1) typeId = paths[1];
+        if (paths.length >2) resource = resourcePath.replace(moduleId + "/" + typeId + "/", "");
+
+        return new ResourcePath(new ResourceType(moduleId, typeId), resource);
     }
 }
