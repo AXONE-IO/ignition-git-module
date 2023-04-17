@@ -16,6 +16,7 @@ import com.inductiveautomation.ignition.common.util.DatasetBuilder;
 import com.inductiveautomation.ignition.gateway.images.ImageManager;
 import com.inductiveautomation.ignition.gateway.images.ImageRecord;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.TransportCommand;
@@ -183,6 +184,17 @@ public class GitManager {
         }else {
             command.setCredentialsProvider(getUsernamePasswordCredentialsProvider(user));
         }
+    }
+
+    public static void setCommitAuthor(CommitCommand command, String projectName, String userName){
+        try {
+            GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
+            GitReposUsersRecord user = getGitReposUserRecord(gitProjectsConfigRecord, userName);
+            command.setAuthor("", user.getEmail());
+        } catch (Exception e){
+            logger.error("An error occurred while setting up commit author.", e);
+        }
+
     }
 
     public static GitProjectsConfigRecord getGitProjectConfigRecord(String projectName) throws Exception {
