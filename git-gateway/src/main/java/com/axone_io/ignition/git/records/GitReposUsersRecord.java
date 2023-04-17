@@ -9,7 +9,9 @@ import com.inductiveautomation.ignition.gateway.web.components.editors.PasswordE
 import com.inductiveautomation.ignition.gateway.web.components.editors.TextAreaEditorSource;
 import com.inductiveautomation.ignition.gateway.web.components.user.UserEditForm;
 import com.inductiveautomation.ignition.gateway.web.util.UniqueStringValidator;
+import org.apache.wicket.markup.html.form.EmailTextField;
 import org.apache.wicket.validation.IValidator;
+import org.apache.wicket.validation.validator.EmailAddressValidator;
 import org.apache.wicket.validation.validator.StringValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +39,12 @@ public class GitReposUsersRecord extends PersistentRecord {
     public static final StringField IgnitionUser = new StringField(META, "IgnitionUser", SFieldFlags.SPRIMARY_KEY, SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
     public static final StringField SSHKey = new StringField(META, "SSHKey");
 
-    public static final StringField UserName = new StringField(META, "UserName");
+    public static final StringField UserName = new StringField(META, "UserName", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
+
+    public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
     public static final EncodedStringField Password = new EncodedStringField(META, "Password");
 
-    static final Category UserProperties = new Category("GitReposUsersRecord.Category.UserProperties", 1000).include(ProjectName, IgnitionUser, SSHKey, UserName, Password);
+    static final Category UserProperties = new Category("GitReposUsersRecord.Category.UserProperties", 1000).include(ProjectName, IgnitionUser, UserName, Email, SSHKey, Password);
 
     public int getId(){
         return this.getInt(Id);
@@ -49,6 +53,7 @@ public class GitReposUsersRecord extends PersistentRecord {
         return this.getInt(ProjectId);
     }
     public String getUserName(){ return this.getString(UserName); }
+    public String getEmail(){ return this.getString(Email); }
     public String getIgnitionUser(){ return this.getString(IgnitionUser); }
     public String getProjectName(){ return this.getString(ProjectName); }
     public String getPassword(){ return this.getString(Password); }
@@ -77,6 +82,11 @@ public class GitReposUsersRecord extends PersistentRecord {
         UserName.getFormMeta().setFieldDescriptionKey("GitReposUsersRecord.UserName.Desc");
         UserName.getFormMeta().setFieldDescriptionKeyAddMode("GitReposUsersRecord.UserName.NewDesc");
         UserName.getFormMeta().setFieldDescriptionKeyEditMode("GitReposUsersRecord.UserName.EditDesc");
+
+        Email.getFormMeta().addValidator(EmailAddressValidator.getInstance());
+        Email.getFormMeta().setFieldDescriptionKey("GitReposUsersRecord.Email.Desc");
+        Email.getFormMeta().setFieldDescriptionKeyAddMode("GitReposUsersRecord.Email.NewDesc");
+        Email.getFormMeta().setFieldDescriptionKeyEditMode("GitReposUsersRecord.Email.EditDesc");
 
         Password.getFormMeta().setFieldDescriptionKey("GitReposUsersRecord.Password.Desc");
         Password.getFormMeta().setFieldDescriptionKeyAddMode("GitReposUsersRecord.Password.NewDesc");
