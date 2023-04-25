@@ -81,8 +81,10 @@ public class GatewayScriptModule extends AbstractScriptModule {
                     git.add().addFilepattern(change).call();
                     git.add().setUpdate(true).addFilepattern(change).call();
                 }
-
-                git.commit().setMessage(message).call();
+                
+                CommitCommand commit = git.commit().setMessage(message);
+                setCommitAuthor(commit, projectName, userName);
+                commit.call();
             } catch (GitAPIException e) {
                 logger.error(e.toString(), e);
                 throw new RuntimeException(e);
@@ -157,9 +159,12 @@ public class GatewayScriptModule extends AbstractScriptModule {
                 git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
 
                 git.add().addFilepattern(".").call();
-                git.commit().setMessage("Initial commit").call();
+                
+                CommitCommand commit = git.commit().setMessage("Initial commit");
+                setCommitAuthor(commit, projectName, userName);
+                commit.call();
+                
                 PushCommand pushCommand = git.push();
-
                 setAuthentication(pushCommand, projectName, userName);
                 pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
             }catch (Exception e){
