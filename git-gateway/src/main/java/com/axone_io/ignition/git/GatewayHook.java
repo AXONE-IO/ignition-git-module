@@ -32,7 +32,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {
-        return Collections.singletonList(GitProjectsConfigPage.MENU_ENTRY);
+        return List.of(GitProjectsConfigPage.MENU_ENTRY);
     }
 
     @Override
@@ -45,14 +45,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     public void setup(GatewayContext gatewayContext) {
         try {
             context = gatewayContext;
-            scriptModule = new GatewayScriptModule();
+            scriptModule = new GatewayScriptModule(context);
             BundleUtil.get().addBundle("bundle_git", getClass(), "bundle_git");
             verifySchema(gatewayContext);
         } catch (Exception e) {
             logger.error(e.toString(), e);
             throw new RuntimeException(e);
         }
-
 
         logger.info("setup()");
     }
@@ -67,7 +66,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public void startup(LicenseState licenseState) {
-
         logger.info("startup()");
     }
 
@@ -77,18 +75,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     }
 
     @Override
-    public void initializeScriptManager(ScriptManager manager) {
-        super.initializeScriptManager(manager);
-
-        /*manager.addScriptModule(
-                "system.git",
-                scriptModule,
-                new PropertiesFileDocProvider());*/
+    public boolean isFreeModule() {
+        return true;
     }
 
     @Override
-    public boolean isFreeModule() {
-        return Boolean.TRUE;
+    public boolean isMakerEditionCompatible() {
+        return true;
     }
 
     @Override
