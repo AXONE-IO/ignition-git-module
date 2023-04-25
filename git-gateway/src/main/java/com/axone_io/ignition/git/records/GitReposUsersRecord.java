@@ -41,7 +41,7 @@ public class GitReposUsersRecord extends PersistentRecord {
 
     public static final StringField UserName = new StringField(META, "UserName", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
 
-    public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
+    public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE).setDefault("");
     public static final EncodedStringField Password = new EncodedStringField(META, "Password");
 
     static final Category UserProperties = new Category("GitReposUsersRecord.Category.UserProperties", 1000).include(ProjectName, IgnitionUser, UserName, Email, SSHKey, Password);
@@ -58,6 +58,21 @@ public class GitReposUsersRecord extends PersistentRecord {
     public String getProjectName(){ return this.getString(ProjectName); }
     public String getPassword(){ return this.getString(Password); }
     public String getSSHKey(){ return this.getString(SSHKey); }
+    public void setUserName(String userName){
+        setString(UserName, userName);
+    }
+    public void setPassword(String password){
+        setString(Password, password);
+    }
+    public void setIgnitionUser(String ignitionUser){
+        setString(IgnitionUser, ignitionUser);
+    }
+    public void setSSHKey(String sshKey){
+        setString(SSHKey, sshKey);
+    }
+    public void setEmail(String email){
+        setString(Email, email);
+    }
 
     public void setProjectId(long projectId){ this.setLong(ProjectId, projectId); }
 

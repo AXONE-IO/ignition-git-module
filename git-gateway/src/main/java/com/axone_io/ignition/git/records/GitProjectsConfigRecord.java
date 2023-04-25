@@ -38,6 +38,13 @@ public class GitProjectsConfigRecord extends PersistentRecord {
         return this.getString(URI);
     }
 
+    public void setProjectName(String projectName){
+        setString(ProjectName, projectName);
+    }
+    public void setURI(String uri){
+        setString(URI, uri);
+    }
+
     public boolean isSSHAuthentication(){
         return !this.getString(URI).toLowerCase().startsWith("http");
     }

@@ -1,52 +1,36 @@
 package com.axone_io.ignition.git;
 
-import com.axone_io.ignition.git.managers.GitManager;
-import com.axone_io.ignition.git.records.GitReposUsersRecord;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.inductiveautomation.ignition.common.BasicDataset;
 import com.inductiveautomation.ignition.common.Dataset;
-import com.inductiveautomation.ignition.common.gson.*;
-import com.inductiveautomation.ignition.common.tags.TagUtilities;
-import com.inductiveautomation.ignition.common.tags.config.TagConfigurationModel;
-import com.inductiveautomation.ignition.common.tags.model.TagPath;
-import com.inductiveautomation.ignition.common.tags.model.TagProvider;
-import com.inductiveautomation.ignition.common.tags.paths.parser.TagPathParser;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
-import com.inductiveautomation.ignition.gateway.images.ImageManager;
-import com.inductiveautomation.ignition.gateway.images.ImageRecord;
-import com.inductiveautomation.ignition.gateway.model.GatewayContext;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.transport.*;
-import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.URIish;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
-
-import simpleorm.dataset.SQuery;
-
+import static com.axone_io.ignition.git.managers.GitImageManager.exportImages;
 import static com.axone_io.ignition.git.managers.GitManager.*;
-import static com.inductiveautomation.ignition.common.tags.TagUtilities.TAG_GSON;
+import static com.axone_io.ignition.git.managers.GitTagManager.exportTag;
+import static com.axone_io.ignition.git.managers.GitThemeManager.exportTheme;
 
 public class GatewayScriptModule extends AbstractScriptModule {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public boolean pullImpl(String projectName, String userName) throws Exception {
-        Git git = getGit(projectName);
+        Path projectFolderPath = getProjectFolderPath(projectName);
+        Git git = getGit(projectFolderPath);
 
         PullCommand pull = git.pull();
         setAuthentication(pull, projectName, userName);
@@ -71,7 +55,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
     @Override
     public boolean pushImpl(String projectName, String userName) throws Exception {
-        Git git = getGit(projectName);
+        Path projectFolderPath = getProjectFolderPath(projectName);
+        Git git = getGit(projectFolderPath);
         PushCommand push = git.push();
 
         setAuthentication(push, projectName, userName);
@@ -94,7 +79,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
     @Override
     protected boolean commitImpl(String projectName, String userName, List<String> changes, String message) {
-        Git git = getGit(projectName);
+        Path projectFolderPath = getProjectFolderPath(projectName);
+        Git git = getGit(projectFolderPath);
         try {
             for(String change: changes){
                 String folderPath = change;
@@ -132,18 +118,19 @@ public class GatewayScriptModule extends AbstractScriptModule {
         builder.colNames(colNames.toArray(new String[0]));
         builder.colTypes(types);
 
+        Path projectFolderPath = getProjectFolderPath(projectName);
         try {
-            Git git = getGit(projectName);
+            Git git = getGit(projectFolderPath);
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
-            uncomittedChangesBuilder(projectPath, missing, "Deleted", changes, builder);
+            uncomittedChangesBuilder(projectFolderPath, missing, "Deleted", changes, builder);
 
             Set<String> uncommittedChanges = status.getUncommittedChanges();
-            uncomittedChangesBuilder(projectPath, uncommittedChanges, "Uncommitted", changes, builder);
+            uncomittedChangesBuilder(projectFolderPath, uncommittedChanges, "Uncommitted", changes, builder);
 
             Set<String> untracked = status.getUntracked();
-            uncomittedChangesBuilder(projectPath, untracked, "Created", changes, builder);
+            uncomittedChangesBuilder(projectFolderPath, untracked, "Created", changes, builder);
 
             git.close();
         } catch (Exception e) {
@@ -168,27 +155,28 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
     @Override
     protected boolean exportConfigImpl(String projectName) {
-        exportImages(projectName);
-        exportTheme(projectName);
-        exportTag(projectName);
+        Path projectFolderPath = getProjectFolderPath(projectName);
+        exportImages(projectFolderPath);
+        exportTheme(projectFolderPath);
+        exportTag(projectFolderPath);
         return true;
     }
 
     @Override
     public void setupLocalRepoImpl(String projectName, String userName) throws Exception {
-        String projectFolderPath = getProjectFolderPath(projectName);
+        Path projectFolderPath = getProjectFolderPath(projectName);
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
 
-        Path path = Paths.get(projectFolderPath + ".git");
+        Path path = projectFolderPath.resolve(".git");
         if(!Files.exists(path)) {
-            Git git = Git.init().setDirectory(new File(projectFolderPath)).call();
-            git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
+            PushCommand pushCommand;
+            try (Git git = Git.init().setDirectory(projectFolderPath.toFile()).call()) {
+                git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
 
-            git.add().addFilepattern(".").call();
-            CommitCommand commit = git.commit().setMessage("Initial commit");
-            setCommitAuthor(commit, projectName, userName);
-            commit.call();
-            PushCommand pushCommand = git.push();
+                git.add().addFilepattern(".").call();
+                git.commit().setMessage("Initial commit").call();
+                pushCommand = git.push();
+            }
             setAuthentication(pushCommand, projectName, userName);
             pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
         }
