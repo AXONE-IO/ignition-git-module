@@ -1,19 +1,19 @@
 package com.axone_io.ignition.git.actions;
 
-import java.awt.event.ActionEvent;
-import java.util.List;
-import javax.swing.Icon;
-
 import com.axone_io.ignition.git.utils.IconUtils;
 import com.inductiveautomation.ignition.client.util.action.BaseAction;
 import com.inductiveautomation.ignition.client.util.gui.ErrorUtil;
+import com.inductiveautomation.ignition.common.BundleUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.axone_io.ignition.git.DesignerHook.projectName;
-import static com.axone_io.ignition.git.DesignerHook.rpc;
-import static com.axone_io.ignition.git.DesignerHook.userName;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.util.List;
+
+import static com.axone_io.ignition.git.DesignerHook.*;
 import static com.axone_io.ignition.git.managers.GitActionManager.showCommitPopup;
+import static com.axone_io.ignition.git.managers.GitActionManager.showConfirmPopup;
 
 public class GitBaseAction extends BaseAction {
     private static final Logger logger = LoggerFactory.getLogger(GitBaseAction.class);
@@ -63,14 +63,22 @@ public class GitBaseAction extends BaseAction {
 
     // Todo : Find a way to refactor with handleAction
     public static void handleCommitAction(List<String> changes, String commitMessage) {
+        String message = BundleUtil.get().getStringLenient(GitActionType.COMMIT.baseBundleKey + ".ConfirmMessage");
+        int messageType = JOptionPane.INFORMATION_MESSAGE;
+
         try {
             rpc.commit(projectName, userName, changes, commitMessage);
+            SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
         } catch (Exception ex) {
             ErrorUtil.showError(ex);
         }
     }
 
     public static void handleAction(GitActionType type) {
+        String message = BundleUtil.get().getStringLenient(type.baseBundleKey + ".ConfirmMessage");
+        int messageType = JOptionPane.INFORMATION_MESSAGE;
+        boolean confirmPopup = Boolean.TRUE;
+
         try {
             switch (type) {
                 case PULL:
@@ -80,12 +88,15 @@ public class GitBaseAction extends BaseAction {
                     rpc.push(projectName, userName);
                     break;
                 case COMMIT:
+                    confirmPopup = Boolean.FALSE;
                     showCommitPopup(projectName, userName);
                     break;
                 case EXPORT:
                     rpc.exportConfig(projectName);
                     break;
             }
+            if(confirmPopup) SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
+
         } catch (Exception ex) {
             ErrorUtil.showError(ex);
         }

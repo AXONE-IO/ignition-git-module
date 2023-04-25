@@ -1,24 +1,17 @@
 package com.axone_io.ignition.git.managers;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
 import com.axone_io.ignition.git.SshTransportConfigCallback;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.axone_io.ignition.git.records.GitReposUsersRecord;
 import com.inductiveautomation.ignition.common.JsonUtilities;
 import com.inductiveautomation.ignition.common.gson.Gson;
-import com.inductiveautomation.ignition.common.gson.GsonBuilder;
 import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.project.RuntimeProject;
-import com.inductiveautomation.ignition.common.project.resource.*;
+import com.inductiveautomation.ignition.common.project.resource.LastModification;
+import com.inductiveautomation.ignition.common.project.resource.ProjectResource;
+import com.inductiveautomation.ignition.common.project.resource.ResourcePath;
+import com.inductiveautomation.ignition.common.project.resource.ResourceType;
 import com.inductiveautomation.ignition.common.tags.TagUtilities;
 import com.inductiveautomation.ignition.common.tags.config.TagConfigurationModel;
 import com.inductiveautomation.ignition.common.tags.model.TagPath;
@@ -36,24 +29,25 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import simpleorm.dataset.SQuery;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 import static com.axone_io.ignition.git.GatewayHook.context;
 
 public class GitManager {
     private final static LoggerEx logger = LoggerEx.newBuilder().build(GitManager.class);
 
-    private static final Gson PROJECT_GSON = new GsonBuilder()
-        .registerTypeAdapter(ImmutableProjectResource.class, new ImmutableProjectResource.GsonAdapter())
-        .registerTypeAdapter(byte[].class, new JsonUtilities.ByteArrayAdapter())
-        .setPrettyPrinting()
-        .create();
-
     public static Git getGit(Path projectFolderPath) {
         Git git;
         try {
             git = Git.open(projectFolderPath.resolve(".git").toFile());
-            StoredConfig config = git.getRepository().getConfig();
-            config.setBoolean("http", null, "sslVerify", false);
-            config.save();
+            disableSsl(git);
         } catch (IOException e) {
             logger.error("Unable to retrieve Git repository", e);
             throw new RuntimeException(e);
@@ -71,7 +65,9 @@ public class GitManager {
 
     public static void exportTag(Path projectFolderPath) {
         Path tagFolderPath = projectFolderPath.resolve("tags");
-        clearDirectory(tagFolderPath);
+        if (tagFolderPath.toFile().exists()) {
+            clearDirectory(tagFolderPath);
+        }
 
         try {
             Files.createDirectories(tagFolderPath);
@@ -82,7 +78,7 @@ public class GitManager {
                 tagPaths.add(typesPath);
 
                 CompletableFuture<List<TagConfigurationModel>> cfTagModels =
-                    tagProvider.getTagConfigsAsync(tagPaths, true, true);
+                        tagProvider.getTagConfigsAsync(tagPaths, true, true);
                 List<TagConfigurationModel> tModels = cfTagModels.get();
 
                 JsonObject json = TagUtilities.toJsonObject(tModels.get(0));
@@ -99,28 +95,34 @@ public class GitManager {
     }
 
     public static void exportTheme(Path projectFolderPath) {
-        try {
-            Path sessionPropsPath = projectFolderPath.resolve("com.inductiveautomation.perspective")
-                .resolve("session-props")
-                .resolve("props.json");
-            String content = Files.readString(sessionPropsPath);
-            Gson g = new Gson();
-            JsonObject json = g.fromJson(content, JsonObject.class);
-            String theme = JsonUtilities.readString(json, "props.theme", "light");
-
-            Path themesDir = context.getSystemManager().getDataDir().toPath()
-                .resolve("modules")
-                .resolve("com.inductiveautomation.perspective")
-                .resolve("themes");
-
-            Path themeFolder = themesDir.resolve(theme);
-            Path themeFile = themesDir.resolve(theme + ".css");
-
-            Path themeFolderPath = projectFolderPath.resolve("themes");
+        Path themeFolderPath = projectFolderPath.resolve("themes");
+        if (themeFolderPath.toFile().exists()) {
             clearDirectory(themeFolderPath);
-            Files.createDirectories(themeFolderPath);
-            FileUtils.copyDirectoryToDirectory(themeFolder.toFile(), themeFolderPath.toFile());
-            Files.copy(themeFile, themeFolderPath.resolve(themeFile.getFileName()));
+        }
+        try {
+            Path perspectiveFolderPath = projectFolderPath.resolve("com.inductiveautomation.perspective");
+
+            if (perspectiveFolderPath.toFile().exists()) {
+                Path sessionPropsPath = perspectiveFolderPath
+                        .resolve("session-props")
+                        .resolve("props.json");
+                String content = Files.readString(sessionPropsPath);
+                Gson g = new Gson();
+                JsonObject json = g.fromJson(content, JsonObject.class);
+                String theme = JsonUtilities.readString(json, "props.theme", "light");
+
+                Path themesDir = context.getSystemManager().getDataDir().toPath()
+                        .resolve("modules")
+                        .resolve("com.inductiveautomation.perspective")
+                        .resolve("themes");
+
+                Path themeFolder = themesDir.resolve(theme);
+                Path themeFile = themesDir.resolve(theme + ".css");
+
+                Files.createDirectories(themeFolderPath);
+                FileUtils.copyDirectoryToDirectory(themeFolder.toFile(), themeFolderPath.toFile());
+                Files.copy(themeFile, themeFolderPath.resolve(themeFile.getFileName()));
+            }
         } catch (IOException e) {
             logger.error(e.toString(), e);
         }
@@ -128,7 +130,10 @@ public class GitManager {
 
     public static void exportImages(Path projectFolderPath) {
         Path imageFolderPath = projectFolderPath.resolve("images");
-        clearDirectory(imageFolderPath);
+        if (imageFolderPath.toFile().exists()) {
+            clearDirectory(imageFolderPath);
+        }
+
         try {
             Files.createDirectories(imageFolderPath);
         } catch (IOException e) {
@@ -151,7 +156,7 @@ public class GitManager {
             } else {
                 byte[] data = imageManager.getImage(path).getBytes(ImageRecord.Data);
                 try {
-                    Files.write(folderPath.resolve(path), data );
+                    Files.write(folderPath.resolve(path), data);
                 } catch (IOException e) {
                     logger.error(e.toString(), e);
                 }
@@ -160,7 +165,7 @@ public class GitManager {
     }
 
     public static void setAuthentication(TransportCommand<?, ?> command, String projectName, String userName)
-        throws Exception {
+            throws Exception {
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
         GitReposUsersRecord user = getGitReposUserRecord(gitProjectsConfigRecord, userName);
 
@@ -173,7 +178,7 @@ public class GitManager {
 
     public static GitProjectsConfigRecord getGitProjectConfigRecord(String projectName) throws Exception {
         SQuery<GitProjectsConfigRecord> projectQuery = new SQuery<>(GitProjectsConfigRecord.META)
-            .eq(GitProjectsConfigRecord.ProjectName, projectName);
+                .eq(GitProjectsConfigRecord.ProjectName, projectName);
         GitProjectsConfigRecord gitProjectsConfigRecord = context.getPersistenceInterface().queryOne(projectQuery);
 
         if (gitProjectsConfigRecord == null) {
@@ -186,8 +191,8 @@ public class GitManager {
     public static GitReposUsersRecord getGitReposUserRecord(GitProjectsConfigRecord gitProjectsConfigRecord,
                                                             String userName) throws Exception {
         SQuery<GitReposUsersRecord> userQuery = new SQuery<>(GitReposUsersRecord.META)
-            .eq(GitReposUsersRecord.ProjectId, gitProjectsConfigRecord.getId())
-            .eq(GitReposUsersRecord.IgnitionUser, userName);
+                .eq(GitReposUsersRecord.ProjectId, gitProjectsConfigRecord.getId())
+                .eq(GitReposUsersRecord.IgnitionUser, userName);
         GitReposUsersRecord user = context.getPersistenceInterface().queryOne(userQuery);
 
         if (user == null) {
@@ -244,25 +249,32 @@ public class GitManager {
 
     public static String getActor(String projectName, String path) {
         ProjectManager projectManager = context.getProjectManager();
-        RuntimeProject project =projectManager.getProject(projectName).get();
+        RuntimeProject project = projectManager.getProject(projectName).get();
 
         ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
-        String actor = LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");;
+        String actor = LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+        ;
 
         return actor;
     }
 
 
-    public static ResourcePath getResourcePath(String resourcePath){
+    public static ResourcePath getResourcePath(String resourcePath) {
         String moduleId = "";
         String typeId = "";
         String resource = "";
         String[] paths = resourcePath.split("/");
 
-        if (paths.length >0) moduleId = paths[0];
-        if (paths.length >1) typeId = paths[1];
-        if (paths.length >2) resource = resourcePath.replace(moduleId + "/" + typeId + "/", "");
+        if (paths.length > 0) moduleId = paths[0];
+        if (paths.length > 1) typeId = paths[1];
+        if (paths.length > 2) resource = resourcePath.replace(moduleId + "/" + typeId + "/", "");
 
         return new ResourcePath(new ResourceType(moduleId, typeId), resource);
+    }
+
+    public static void disableSsl(Git git) throws IOException {
+        StoredConfig config = git.getRepository().getConfig();
+        config.setBoolean("http", null, "sslVerify", false);
+        config.save();
     }
 }

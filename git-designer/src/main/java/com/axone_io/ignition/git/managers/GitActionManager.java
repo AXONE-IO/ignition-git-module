@@ -1,13 +1,14 @@
 package com.axone_io.ignition.git.managers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.axone_io.ignition.git.CommitPopup;
 import com.axone_io.ignition.git.DesignerHook;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.common.project.ChangeOperation;
 import com.inductiveautomation.ignition.common.project.resource.ProjectResourceId;
+
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.axone_io.ignition.git.DesignerHook.context;
 import static com.axone_io.ignition.git.DesignerHook.rpc;
@@ -44,5 +45,10 @@ public class GitActionManager {
                 handleCommitAction(changes, commitMessage);
             }
         };
+    }
+
+    public static void showConfirmPopup(String message, int messageType){
+        JOptionPane.showConfirmDialog(context.getFrame(),
+                message, "Info", JOptionPane.DEFAULT_OPTION, messageType);
     }
 }

@@ -1,35 +1,24 @@
 package com.axone_io.ignition.git;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.inductiveautomation.ignition.common.BasicDataset;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.PullCommand;
-import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.api.PushCommand;
-import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
-import static com.axone_io.ignition.git.managers.GitManager.exportImages;
-import static com.axone_io.ignition.git.managers.GitManager.exportTag;
-import static com.axone_io.ignition.git.managers.GitManager.exportTheme;
-import static com.axone_io.ignition.git.managers.GitManager.getGit;
-import static com.axone_io.ignition.git.managers.GitManager.getGitProjectConfigRecord;
-import static com.axone_io.ignition.git.managers.GitManager.getGitReposUserRecord;
-import static com.axone_io.ignition.git.managers.GitManager.setAuthentication;
-import static com.axone_io.ignition.git.managers.GitManager.uncommittedChangesBuilder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import static com.axone_io.ignition.git.managers.GitManager.*;
 
 public class GatewayScriptModule extends AbstractScriptModule {
     private final LoggerEx logger = LoggerEx.newBuilder().build(getClass());
@@ -160,18 +149,23 @@ public class GatewayScriptModule extends AbstractScriptModule {
         Path projectFolderPath = getProjectFolderPath(projectName);
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
 
-        Path path = projectFolderPath.resolve(".git");
-        if (!Files.exists(path)) {
-            PushCommand pushCommand;
-            try (Git git = Git.init().setDirectory(projectFolderPath.toFile()).call()) {
+        if (!Files.exists(projectFolderPath.resolve(".git"))) {
+            try{
+                Git git = Git.init().setDirectory(projectFolderPath.toFile()).call();
+                disableSsl(git);
+
                 git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
 
                 git.add().addFilepattern(".").call();
                 git.commit().setMessage("Initial commit").call();
-                pushCommand = git.push();
+                PushCommand pushCommand = git.push();
+
+                setAuthentication(pushCommand, projectName, userName);
+                pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
+            }catch (Exception e){
+                logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.");
+                throw new RuntimeException(e);
             }
-            setAuthentication(pushCommand, projectName, userName);
-            pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
         }
     }
 
