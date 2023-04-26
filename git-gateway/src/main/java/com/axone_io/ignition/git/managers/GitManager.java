@@ -3,12 +3,14 @@ package com.axone_io.ignition.git.managers;
 import com.axone_io.ignition.git.SshTransportConfigCallback;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.axone_io.ignition.git.records.GitReposUsersRecord;
-import com.inductiveautomation.ignition.common.gson.Gson;
-import com.inductiveautomation.ignition.common.gson.JsonElement;
-import com.inductiveautomation.ignition.common.gson.JsonObject;
-import com.inductiveautomation.ignition.common.gson.JsonPrimitive;
+import com.inductiveautomation.ignition.common.project.RuntimeProject;
+import com.inductiveautomation.ignition.common.project.resource.LastModification;
+import com.inductiveautomation.ignition.common.project.resource.ProjectResource;
+import com.inductiveautomation.ignition.common.project.resource.ResourcePath;
+import com.inductiveautomation.ignition.common.project.resource.ResourceType;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
+import com.inductiveautomation.ignition.gateway.project.ProjectManager;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -19,7 +21,6 @@ import simpleorm.dataset.SQuery;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,17 +36,12 @@ public class GitManager {
         Git git;
         try {
             git = Git.open(projectFolderPath.resolve(".git").toFile());
-            initGitConfig(git.getRepository().getConfig());
+            disableSsl(git);
         } catch (IOException e) {
             logger.error("Unable to retrieve Git repository", e);
             throw new RuntimeException(e);
         }
         return git;
-    }
-
-    static public void initGitConfig(StoredConfig config) throws IOException {
-        config.setBoolean("http", null, "sslVerify", false);
-        config.save();
     }
 
     public static Path getProjectFolderPath(String projectName) {
@@ -60,12 +56,13 @@ public class GitManager {
 
     public static void clearDirectory(Path folderPath) {
         try {
-            FileUtils.cleanDirectory(folderPath.toFile());
+            if (folderPath.toFile().exists()) {
+                FileUtils.cleanDirectory(folderPath.toFile());
+            }
         } catch (Exception e) {
             logger.error(e.toString(), e);
         }
     }
-
 
     public static void setAuthentication(TransportCommand<?, ?> command, String projectName, String userName) throws Exception {
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
@@ -75,6 +72,7 @@ public class GitManager {
     }
 
     public static void setAuthentication(TransportCommand<?, ?> command, GitProjectsConfigRecord gitProjectsConfigRecord, GitReposUsersRecord user) {
+
         if (gitProjectsConfigRecord.isSSHAuthentication()) {
             command.setTransportConfigCallback(getSshTransportConfigCallback(user));
         } else {
@@ -106,9 +104,10 @@ public class GitManager {
         return gitProjectsConfigRecord;
     }
 
-    public static GitReposUsersRecord getGitReposUserRecord(GitProjectsConfigRecord gitProjectsConfigRecord, String userName) throws Exception {
+    public static GitReposUsersRecord getGitReposUserRecord(GitProjectsConfigRecord gitProjectsConfigRecord,
+                                                            String userName) throws Exception {
         SQuery<GitReposUsersRecord> userQuery = new SQuery<>(GitReposUsersRecord.META)
-                .eq(GitReposUsersRecord.ProjectName, gitProjectsConfigRecord)
+                .eq(GitReposUsersRecord.ProjectId, gitProjectsConfigRecord.getId())
                 .eq(GitReposUsersRecord.IgnitionUser, userName);
         GitReposUsersRecord user = context.getPersistenceInterface().queryOne(userQuery);
 
@@ -127,20 +126,26 @@ public class GitManager {
         return new SshTransportConfigCallback(user.getSSHKey());
     }
 
-    public static void uncomittedChangesBuilder(Path projectPath, Set<String> updates, String type, List<String> changes, DatasetBuilder builder) {
+    public static void uncommittedChangesBuilder(String projectName,
+                                                 Set<String> updates,
+                                                 String type,
+                                                 List<String> changes,
+                                                 DatasetBuilder builder) throws IOException {
         for (String update : updates) {
             String[] rowData = new String[3];
-
+            String actor = "unknown";
             String path = update;
             if (hasActor(path)) {
                 String[] pathSplitted = update.split("/");
                 path = String.join("/", Arrays.copyOf(pathSplitted, pathSplitted.length - 1));
+
+                actor = getActor(projectName, path);
             }
 
             rowData[0] = path;
             rowData[1] = type;
             if (!changes.contains(path)) {
-                rowData[2] = getActor(projectPath.resolve(path));
+                rowData[2] = actor;
                 changes.add(path);
                 builder.addRow((Object[]) rowData);
             }
@@ -161,23 +166,12 @@ public class GitManager {
         return hasActor;
     }
 
-    public static String getActor(Path path) {
-        Gson g = new Gson();
-        String actor = "";
-        try {
-            String content = new String(Files.readAllBytes(path.resolve("resource.json")));
+    public static String getActor(String projectName, String path) {
+        ProjectManager projectManager = context.getProjectManager();
+        RuntimeProject project = projectManager.getProject(projectName).get();
 
-            JsonObject j = (JsonObject) g.fromJson(content, JsonElement.class);
-
-            JsonObject a = j.getAsJsonObject("attributes");
-            JsonObject b = a.getAsJsonObject("lastModification");
-            JsonPrimitive c = b.getAsJsonPrimitive("actor");
-
-            actor = c.getAsString();
-        } catch (Exception e) {
-            logger.trace(e.toString(), e);
-        }
-        return actor;
+        ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
+        return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
     }
 
     public static List getAddedFiles(String projectName) {
@@ -197,49 +191,54 @@ public class GitManager {
     public static void cloneRepo(String projectName, String userName, String URI, String branchName) {
         File projectDirFile = getProjectFolderPath(projectName).toFile();
         if (projectDirFile.exists()) {
+            try (Git git = Git.init().setDirectory(projectDirFile).call()) {
+                disableSsl(git);
 
-            try {
-                // GIT INIT
-                Git git = Git.init()
-                        .setDirectory(projectDirFile)
-                        .call();
+                // GIT REMOTE ADD
+                URIish urIish = new URIish(URI);
+                git.remoteAdd()
+                        .setName(urIish.getHumanishName())
+                        .setUri(urIish).call();
 
-                try {
-                    initGitConfig(git.getRepository().getConfig());
+                //GIT FETCH
+                FetchCommand fetch = git.fetch()
+                        .setRemote(urIish.getHumanishName())
+                        .setRefSpecs(new RefSpec("refs/heads/" + branchName + ":refs/remotes/" + urIish.getHumanishName() + "/" + branchName));
 
-                    // GIT REMOTE ADD
-                    URIish urIish = new URIish(URI);
-                    git.remoteAdd()
-                            .setName(urIish.getHumanishName())
-                            .setUri(urIish).call();
+                setAuthentication(fetch, projectName, userName);
+                fetch.call();
 
-                    //GIT FETCH
-                    FetchCommand fetch = git.fetch()
-                            .setRemote(urIish.getHumanishName())
-                            .setRefSpecs(new RefSpec("refs/heads/" + branchName + ":refs/remotes/" + urIish.getHumanishName() + "/" + branchName));
-
-                    setAuthentication(fetch, projectName, userName);
-                    fetch.call();
-
-                    //GIT CHECKOUT
-                    CheckoutCommand checkout = git.checkout()
-                            .setCreateBranch(true)
-                            .setName(branchName)
-                            .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-                            .setStartPoint(urIish.getHumanishName() + "/" + branchName);
-                    checkout.call();
-
-                } catch (Exception ex) {
-                    throw ex;
-                } finally {
-                    git.close();
-                }
+                //GIT CHECKOUT
+                CheckoutCommand checkout = git.checkout()
+                        .setCreateBranch(true)
+                        .setName(branchName)
+                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .setStartPoint(urIish.getHumanishName() + "/" + branchName);
+                checkout.call();
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new RuntimeException(e);
             }
-
         }
     }
 
+
+    public static ResourcePath getResourcePath(String resourcePath) {
+        String moduleId = "";
+        String typeId = "";
+        String resource = "";
+        String[] paths = resourcePath.split("/");
+
+        if (paths.length > 0) moduleId = paths[0];
+        if (paths.length > 1) typeId = paths[1];
+        if (paths.length > 2) resource = resourcePath.replace(moduleId + "/" + typeId + "/", "");
+
+        return new ResourcePath(new ResourceType(moduleId, typeId), resource);
+    }
+
+    public static void disableSsl(Git git) throws IOException {
+        StoredConfig config = git.getRepository().getConfig();
+        config.setBoolean("http", null, "sslVerify", false);
+        config.save();
+    }
 }

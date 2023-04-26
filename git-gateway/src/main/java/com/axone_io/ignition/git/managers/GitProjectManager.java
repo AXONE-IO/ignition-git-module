@@ -23,14 +23,14 @@ import static com.axone_io.ignition.git.managers.GitManager.getProjectFolderPath
 public class GitProjectManager {
     private final static LoggerEx logger = LoggerEx.newBuilder().build(GitProjectManager.class);
 
-    public static void importProject(String projectName){
+    public static void importProject(String projectName) {
         ProjectManager projectManager = context.getProjectManager();
         Path projectDir = getProjectFolderPath(projectName);
 
         try {
             Set<ProjectResource> resources = importFromFolder(projectDir, projectName);
             ProjectManifest projectManifest = loadProjectManifest(projectDir);
-            projectManager.createOrReplaceProject(projectName, projectManifest,  new ArrayList(resources));
+            projectManager.createOrReplaceProject(projectName, projectManifest, new ArrayList(resources));
 
         } catch (ProjectInvalidException | IOException e) {
             logger.error("An error occurred while importing '" + projectName + "' project.", e);
@@ -39,7 +39,7 @@ public class GitProjectManager {
 
     }
 
-    public static Set<Map.Entry<String, byte[]>> listFiles(Path projectPath){
+    public static Set<Map.Entry<String, byte[]>> listFiles(Path projectPath) {
         Set<Map.Entry<String, byte[]>> resources = new HashSet<>();
         Stack<File> stack = new Stack<>();
         File directory = projectPath.toFile();
@@ -50,7 +50,7 @@ public class GitProjectManager {
             File current = stack.pop();
 
             File[] files = current.listFiles();
-            if(files != null){
+            if (files != null) {
                 for (File file : files) {
                     if (file.isDirectory()) {
                         stack.push(file);
@@ -59,7 +59,7 @@ public class GitProjectManager {
                             String path = file.getAbsolutePath().replace(projectPath.toFile().getAbsolutePath(), "");
                             path = path.substring(1);
                             path = path.replace("\\", "/");
-                            resources.add( new AbstractMap.SimpleEntry<>(path, Files.readAllBytes(file.toPath())));
+                            resources.add(new AbstractMap.SimpleEntry<>(path, Files.readAllBytes(file.toPath())));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -70,7 +70,7 @@ public class GitProjectManager {
         return resources;
     }
 
-    public static boolean isAnIgnitionResource(String resource){
+    public static boolean isAnIgnitionResource(String resource) {
         return !resource.startsWith(".git")
                 && !resource.startsWith("tags")
                 && !resource.startsWith("images")
@@ -86,7 +86,7 @@ public class GitProjectManager {
         files.removeIf(e -> !isAnIgnitionResource(e.getKey()));
         files.stream().collect(Collectors.groupingBy(e -> StringUtils.substringBeforeLast(e.getKey(), "/")))
                 .forEach((resourcePath, listOfFileNodes) -> {
-                    if (isAnIgnitionResource(resourcePath)){
+                    if (isAnIgnitionResource(resourcePath)) {
                         StringPath stringPath = StringPath.parse(resourcePath);
                         resources.addAll(createParentFolderResources(projectName, stringPath, createdFolders));
                         String manifestPath = String.format("%s/%s", resourcePath, "resource.json");
@@ -103,7 +103,7 @@ public class GitProjectManager {
                             createdFolders.add(stringPath);
                         }
                     }
-        });
+                });
 
         return resources;
     }
@@ -139,6 +139,7 @@ public class GitProjectManager {
 
         return folders;
     }
+
     private static Map<String, byte[]> createDataMap(ProjectResourceManifest resourceManifest, List<Map.Entry<String, byte[]>> listOfFileNodes) {
         List<String> allowedFiles = resourceManifest.getFiles();
         HashMap<String, byte[]> dataMap = new HashMap<>();
@@ -149,6 +150,7 @@ public class GitProjectManager {
         });
         return dataMap;
     }
+
     private static ProjectResourceBuilder createResourceBuilder(String projectName, StringPath resourcePath, ProjectResourceManifest manifest, Map<String, byte[]> dataMap) {
         String moduleId = resourcePath.getPathComponent(0);
         String resourceType = (resourcePath.getPathLength() > 1) ? resourcePath.getPathComponent(1) : null;

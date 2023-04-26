@@ -6,7 +6,7 @@
     <parent>
         <artifactId>git</artifactId>
         <groupId>com.axone_io.ignition</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>git-gateway</artifactId>
@@ -36,7 +36,6 @@
             <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
             <version>6.5.0.202303070854-r</version>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -46,8 +45,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>
-                    <source>9</source>
-                    <target>9</target>
+                    <source>${ignition-java-version}</source>
+                    <target>${ignition-java-version}</target>
                 </configuration>
             </plugin>
         </plugins>

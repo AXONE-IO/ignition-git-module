@@ -1,5 +1,10 @@
 package com.axone_io.ignition.git.commissioning;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class GitCommissioningConfig {
     private String repoURI;
     private String repoBranch;
@@ -7,6 +12,7 @@ public class GitCommissioningConfig {
     private String ignitionUserName;
     private String userName;
     private String userPassword;
+    private String sshKey;
     private String userEmail;
 
     private boolean importImages = false;
@@ -91,5 +97,24 @@ public class GitCommissioningConfig {
 
     public void setImportThemes(boolean importThemes) {
         this.importThemes = importThemes;
+    }
+
+    public String getSshKey() {
+        return sshKey;
+    }
+
+    public void setSshKey(String sshKey) {
+        this.sshKey = sshKey;
+    }
+
+    public void setSecretFromFilePath(Path filePath, boolean isSSHAuth) throws IOException {
+        if (filePath.toFile().exists() && filePath.toFile().isFile()) {
+            String secret = Files.readString(filePath, StandardCharsets.UTF_8);
+            if (isSSHAuth) {
+                this.sshKey = secret;
+            } else {
+                this.userPassword = secret;
+            }
+        }
     }
 }

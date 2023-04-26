@@ -6,7 +6,6 @@ import com.axone_io.ignition.git.records.GitReposUsersRecord;
 import com.axone_io.ignition.git.web.GitProjectsConfigPage;
 import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
-import com.inductiveautomation.ignition.common.script.ScriptManager;
 import com.inductiveautomation.ignition.gateway.clientcomm.ClientReqSession;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
@@ -31,7 +30,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {
-        return Collections.singletonList(GitProjectsConfigPage.MENU_ENTRY);
+        return List.of(GitProjectsConfigPage.MENU_ENTRY);
     }
 
     @Override
@@ -43,7 +42,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     @Override
     public void setup(GatewayContext gatewayContext) {
         context = gatewayContext;
-        scriptModule = new GatewayScriptModule();
+        scriptModule = new GatewayScriptModule(context);
         BundleUtil.get().addBundle("bundle_git", getClass(), "bundle_git");
         verifySchema(gatewayContext);
 
@@ -60,8 +59,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public void startup(LicenseState licenseState) {
-
         GitCommissioningUtils.loadConfiguration();
+
         logger.info("startup()");
     }
 
@@ -71,18 +70,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     }
 
     @Override
-    public void initializeScriptManager(ScriptManager manager) {
-        super.initializeScriptManager(manager);
-
-        /*manager.addScriptModule(
-                "system.git",
-                scriptModule,
-                new PropertiesFileDocProvider());*/
+    public boolean isFreeModule() {
+        return true;
     }
 
     @Override
-    public boolean isFreeModule() {
-        return Boolean.TRUE;
+    public boolean isMakerEditionCompatible() {
+        return true;
     }
 
     @Override

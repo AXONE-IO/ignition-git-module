@@ -34,11 +34,11 @@ You will also find a download link to the signed version of the module.
 
 Before installing and running this project on your local machine, make sure you have installed the following :
 
-- Java (OpenJDK version 16.0.1)
+- Java (JDK >= 11)
 - Maven
 - Java IDE (I recommend [Intellij](https://www.jetbrains.com/idea/download/))
 
-If you are using Intellij, maven is already integrated in the IDE and you can easily download the right Java SDK from your project settings.
+If you are using Intellij, Maven is already integrated in the IDE and you can easily download the right Java SDK from your project settings.
 
 ### Installation Instructions
 

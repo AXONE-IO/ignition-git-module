@@ -6,7 +6,7 @@
     <parent>
         <artifactId>git</artifactId>
         <groupId>com.axone_io.ignition</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>git-client</artifactId>
@@ -61,8 +61,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>
-                    <source>9</source>
-                    <target>9</target>
+                    <source>${ignition-java-version}</source>
+                    <target>${ignition-java-version}</target>
                 </configuration>
             </plugin>
         </plugins>

@@ -21,12 +21,13 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.axone_io.ignition.git.GatewayHook.context;
-import static com.axone_io.ignition.git.managers.GitManager.cloneRepo;
+import static com.axone_io.ignition.git.managers.GitManager.*;
 
 public class GitCommissioningUtils {
     private final static LoggerEx logger = LoggerEx.newBuilder().build(GitCommissioningUtils.class);
@@ -34,85 +35,102 @@ public class GitCommissioningUtils {
 
     @Subscribe
     public static void loadConfiguration() {
-        Path dataDir = context.getSystemManager().getDataDir().toPath();
+        Path dataDir = getDataFolderPath();
         File ignitionConf = dataDir.resolve("git.conf").toFile();
         ProjectManager projectManager = context.getProjectManager();
 
         try {
-            GitCommissioningConfig config = parseConfigLines(FileUtils.readFileToByteArray(ignitionConf));
-            if(projectManager.getProjectNames().contains(config.getIgnitionProjectName())){
-                logger.info("The configuration of the git module was interrupted because the project '" + config.getIgnitionProjectName() + "' already exist.");
-                return;
-            }
-            projectManager.createProject(config.getIgnitionProjectName(), new ProjectManifest(config.getIgnitionProjectName(), "", false, false,""), new ArrayList());
+            if (ignitionConf.exists() && ignitionConf.isFile()){
+                GitCommissioningConfig config = parseConfigLines(FileUtils.readFileToByteArray(ignitionConf));
+                if (projectManager.getProjectNames().contains(config.getIgnitionProjectName())) {
+                    logger.info("The configuration of the git module was interrupted because the project '" + config.getIgnitionProjectName() + "' already exist.");
+                    return;
+                }
+                projectManager.createProject(config.getIgnitionProjectName(), new ProjectManifest(config.getIgnitionProjectName(), "", false, false, ""), new ArrayList());
 
-            Path projectDir = dataDir.resolve("projects").resolve(config.getIgnitionProjectName());
-            FileUtils.cleanDirectory(projectDir.toFile());
+                Path projectDir = getProjectFolderPath(config.getIgnitionProjectName());
+                clearDirectory(projectDir);
 
-            // Creation of records
-            PersistenceInterface persistenceInterface = context.getPersistenceInterface();
-            SQuery<GitProjectsConfigRecord> query = new SQuery<>(GitProjectsConfigRecord.META).eq(GitProjectsConfigRecord.ProjectName, config.getIgnitionProjectName());
-            if(persistenceInterface.queryOne(query) != null){
-                logger.info("The configuration of the git module was interrupted because the GitProjectsConfigRecord '" + config.getIgnitionProjectName() + "' already exist.");
-                return;
-            }
-            GitProjectsConfigRecord projectsConfigRecord = persistenceInterface.createNew(GitProjectsConfigRecord. META);
-            projectsConfigRecord.setProjectName(config.getIgnitionProjectName());
-            projectsConfigRecord.setURI(config.getRepoURI());
-            persistenceInterface.save(projectsConfigRecord);
+                // Creation of records
+                PersistenceInterface persistenceInterface = context.getPersistenceInterface();
+                SQuery<GitProjectsConfigRecord> query = new SQuery<>(GitProjectsConfigRecord.META).eq(GitProjectsConfigRecord.ProjectName, config.getIgnitionProjectName());
+                if (persistenceInterface.queryOne(query) != null) {
+                    logger.info("The configuration of the git module was interrupted because the GitProjectsConfigRecord '" + config.getIgnitionProjectName() + "' already exist.");
+                    return;
+                }
+                GitProjectsConfigRecord projectsConfigRecord = persistenceInterface.createNew(GitProjectsConfigRecord.META);
+                projectsConfigRecord.setProjectName(config.getIgnitionProjectName());
+                projectsConfigRecord.setURI(config.getRepoURI());
 
-            GitReposUsersRecord reposUsersRecord = persistenceInterface.createNew(GitReposUsersRecord. META);
-            reposUsersRecord.setUserName(config.getUserName());
-            reposUsersRecord.setIgnitionUser(config.getIgnitionUserName());
-            reposUsersRecord.setProjectId(projectsConfigRecord.getId());
-            reposUsersRecord.setPassword(config.getUserPassword());
-            reposUsersRecord.setEmail(config.getUserEmail());
-            persistenceInterface.save(reposUsersRecord);
+                String userSecretFilePath = System.getenv("GATEWAY_GIT_USER_SECRET_FILE");
+                if (userSecretFilePath != null){
+                    config.setSecretFromFilePath(Paths.get(userSecretFilePath), projectsConfigRecord.isSSHAuthentication());
+                }
+                if (config.getSshKey() == null && config.getUserPassword() == null){
+                    throw new Exception("Git User Password or SSHKey not configured.");
+                }
+                persistenceInterface.save(projectsConfigRecord);
 
-           // CLONE PROJECT
-            cloneRepo(config.getIgnitionProjectName(), config.getUserName(), config.getRepoURI(), config.getRepoBranch());
+                GitReposUsersRecord reposUsersRecord = persistenceInterface.createNew(GitReposUsersRecord.META);
+                reposUsersRecord.setUserName(config.getUserName());
+                reposUsersRecord.setIgnitionUser(config.getIgnitionUserName());
+                reposUsersRecord.setProjectId(projectsConfigRecord.getId());
+                if (projectsConfigRecord.isSSHAuthentication()){
+                    reposUsersRecord.setSSHKey(config.getSshKey());
+                } else {
+                    reposUsersRecord.setPassword(config.getUserPassword());
+                }
+                reposUsersRecord.setEmail(config.getUserEmail());
+                persistenceInterface.save(reposUsersRecord);
 
-            // IMPORT PROJECT
-            GitProjectManager.importProject(config.getIgnitionProjectName());
+                // CLONE PROJECT
+                cloneRepo(config.getIgnitionProjectName(), config.getIgnitionUserName(), config.getRepoURI(), config.getRepoBranch());
 
-            // IMPORT TAGS
-            if(config.isImportTags()){
-                GitTagManager.importTagManager(config.getIgnitionProjectName());
-            }
+                // IMPORT PROJECT
+                GitProjectManager.importProject(config.getIgnitionProjectName());
 
-            // IMPORT THEMES
-            if(config.isImportThemes()){
-                GitThemeManager.importTheme(config.getIgnitionProjectName());
-            }
+                // IMPORT TAGS
+                if (config.isImportTags()) {
+                    GitTagManager.importTagManager(config.getIgnitionProjectName());
+                }
 
-            // IMPORT IMAGES
-            if(config.isImportImages()){
-                GitImageManager.importImages(config.getIgnitionProjectName());
+                // IMPORT THEMES
+                if (config.isImportThemes()) {
+                    GitThemeManager.importTheme(config.getIgnitionProjectName());
+                }
+
+                // IMPORT IMAGES
+                if (config.isImportImages()) {
+                    GitImageManager.importImages(config.getIgnitionProjectName());
+                }
+            }else{
+                logger.info("No git configuration file was found.");
             }
 
         } catch (Exception e) {
-            logger.error("An error occurred while git configuration settings up." ,e);
+            logger.error("An error occurred while git configuration settings up.", e);
         }
     }
-
 
 
     static protected GitCommissioningConfig parseConfigLines(byte[] ignitionConf) throws Exception {
         Pattern repoUriPattern = Pattern.compile("repo.uri");
         Pattern repoBranchPattern = Pattern.compile("repo.branch");
-        Pattern projectNamePattern = Pattern.compile("ignition.project.name");
 
+        Pattern projectNamePattern = Pattern.compile("ignition.project.name");
         Pattern ignitionUserName = Pattern.compile("ignition.user.name");
+
         Pattern userNamePattern = Pattern.compile("user.name");
         Pattern passwordPattern = Pattern.compile("user.password");
         Pattern emailPattern = Pattern.compile("user.email");
+        Pattern sshKeyFilePath = Pattern.compile("user.shh.key.file.path");
+
         Pattern importTags = Pattern.compile("commissioning.import.tags");
         Pattern importThemes = Pattern.compile("commissioning.import.themes");
         Pattern importImages = Pattern.compile("commissioning.import.images");
 
         GitCommissioningConfig config = new GitCommissioningConfig();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(ignitionConf), StandardCharsets.UTF_8));
-        try {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(ignitionConf), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 Matcher repoUriMatcher = repoUriPattern.matcher(line);
@@ -125,34 +143,35 @@ public class GitCommissioningUtils {
                 Matcher importTagsMatcher = importTags.matcher(line);
                 Matcher importThemesMatcher = importThemes.matcher(line);
                 Matcher importImagesMatcher = importImages.matcher(line);
+                Matcher sshKeyFilePathMatcher = sshKeyFilePath.matcher(line);
 
                 if (repoUriMatcher.find()) {
                     config.setRepoURI(line.split("=")[1]);
                 } else if (repoBranchMatcher.find()) {
                     config.setRepoBranch(line.split("=")[1]);
-                }else if (projectNameMatcher.find()) {
+                } else if (projectNameMatcher.find()) {
                     config.setIgnitionProjectName(line.split("=")[1]);
-                }else if (ignitionUserNameMatcher.find()) {
+                } else if (ignitionUserNameMatcher.find()) {
                     config.setIgnitionUserName(line.split("=")[1]);
-                }else if (userNameMatcher.find()) {
+                } else if (userNameMatcher.find()) {
                     config.setUserName(line.split("=")[1]);
-                }else if (passwordMatcher.find()) {
+                } else if (passwordMatcher.find()) {
                     config.setUserPassword(line.split("=")[1]);
-                }else if (emailMatcher.find()) {
+                } else if (emailMatcher.find()) {
                     config.setUserEmail(line.split("=")[1]);
-                }else if(importTagsMatcher.find()){
+                } else if (importTagsMatcher.find()) {
                     config.setImportTags(Boolean.parseBoolean(line.split("=")[1]));
-                }else if(importThemesMatcher.find()){
+                } else if (importThemesMatcher.find()) {
                     config.setImportThemes(Boolean.parseBoolean(line.split("=")[1]));
-                }else if(importImagesMatcher.find()){
+                } else if (importImagesMatcher.find()) {
                     config.setImportImages(Boolean.parseBoolean(line.split("=")[1]));
+                } else if (sshKeyFilePathMatcher.find()) {
+                    config.setSecretFromFilePath(Paths.get(line.split("=")[1]), true);
                 }
             }
         } catch (Exception e) {
             logger.error("An error occurred while importing the Git configuration file.", e);
             throw new RuntimeException(e);
-        }finally {
-            reader.close();
         }
         return config;
     }

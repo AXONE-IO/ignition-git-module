@@ -2,8 +2,6 @@ package com.axone_io.ignition.git.records;
 
 import com.axone_io.ignition.git.web.ProjectList.ProjectListEditorSource;
 import com.inductiveautomation.ignition.gateway.localdb.persistence.*;
-import org.apache.wicket.validation.validator.PatternValidator;
-import org.apache.wicket.validation.validator.StringValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import simpleorm.dataset.SFieldFlags;
@@ -28,24 +26,27 @@ public class GitProjectsConfigRecord extends PersistentRecord {
     static final Category ProjectConfiguration = new Category("GitProjectsConfigRecord.Category.ProjectConfiguration", 1000).include(ProjectName, URI);
 
 
-    public long getId(){
+    public long getId() {
         return this.getLong(Id);
     }
-    public String getProjectName(){
+
+    public String getProjectName() {
         return this.getString(ProjectName);
     }
-    public String getURI(){
+
+    public String getURI() {
         return this.getString(URI);
     }
 
-    public void setProjectName(String projectName){
+    public void setProjectName(String projectName) {
         setString(ProjectName, projectName);
     }
-    public void setURI(String uri){
+
+    public void setURI(String uri) {
         setString(URI, uri);
     }
 
-    public boolean isSSHAuthentication(){
+    public boolean isSSHAuthentication() {
         return !this.getString(URI).toLowerCase().startsWith("http");
     }
 

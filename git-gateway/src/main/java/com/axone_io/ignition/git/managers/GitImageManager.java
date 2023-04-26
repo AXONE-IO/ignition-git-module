@@ -1,6 +1,5 @@
 package com.axone_io.ignition.git.managers;
 
-import com.inductiveautomation.ignition.client.images.PathIcon;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.images.ImageFormat;
 import com.inductiveautomation.ignition.gateway.images.ImageManager;
@@ -8,7 +7,9 @@ import com.inductiveautomation.ignition.gateway.images.ImageRecord;
 import com.inductiveautomation.ignition.gateway.localdb.persistence.PersistenceInterface;
 import simpleorm.dataset.SQuery;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -135,5 +136,42 @@ public class GitImageManager {
                 }
             }
         }
+    }
+}
+
+class PathIcon extends ImageIcon {
+    protected static final Component COMP = new Component() {
+    };
+    private static MediaTracker tracker;
+    private static int nextId;
+    public static boolean waitForImage(Image image) {
+        if (image == null) {
+            return false;
+        } else if (image instanceof BufferedImage) {
+            return true;
+        } else {
+            int id;
+            synchronized(COMP) {
+                id = nextId++;
+            }
+
+            tracker.addImage(image, id);
+
+            try {
+                tracker.waitForID(id);
+            } catch (InterruptedException var4) {
+                System.err.println("Image loading interrupted!");
+                return false;
+            }
+
+            boolean success = !tracker.isErrorID(id);
+            tracker.removeImage(image, id);
+            return success;
+        }
+    }
+
+    static {
+        tracker = new MediaTracker(COMP);
+        nextId = 0;
     }
 }
