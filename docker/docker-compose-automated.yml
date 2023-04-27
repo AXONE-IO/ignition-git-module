@@ -1,0 +1,45 @@
+# ICC 2022 - Docker Basics Workshop - Part II, Docker Compose
+# ref: https://github.com/compose-spec/compose-spec/blob/master/spec.md
+---
+services:
+  gateway:
+    build:
+      context: gw-build
+      dockerfile: Dockerfile
+      args:
+        IGNITION_VERSION: ${IGNITION_VERSION:-8.1.26}
+        SUPPLEMENTAL_MODULES: "git"
+        GATEWAY_ADMIN_USERNAME: admin
+      secrets:
+        - gateway-admin-password
+    hostname: gateway
+    ports:
+      - 9088:8088
+    environment:
+      - ACCEPT_IGNITION_EULA=Y
+      #- GATEWAY_ADMIN_USERNAME=admin
+      #- GATEWAY_ADMIN_PASSWORD_FILE=/run/secrets/gateway-admin-password
+      - GATEWAY_GIT_USER_SECRET_FILE=/run/secrets/gateway-git-user-secret
+      - IGNITION_EDITION=standard
+    networks:
+      - default
+    volumes:
+      - gateway_data:/usr/local/bin/ignition/data
+      - ./gw-init/git.conf:/usr/local/bin/ignition/data/git.conf
+    secrets:
+      - gateway-git-user-secret
+      - gateway-admin-password
+    command: >
+      -n Ignition-DevOps
+
+networks:
+  default:
+
+secrets:
+  gateway-git-user-secret:
+    file: gw-secrets/GATEWAY_GIT_USER_SECRET
+  gateway-admin-password:
+    file: gw-secrets/GATEWAY_ADMIN_PASSWORD
+
+volumes:
+  gateway_data:
