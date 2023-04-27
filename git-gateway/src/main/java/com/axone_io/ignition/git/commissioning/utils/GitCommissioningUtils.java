@@ -46,6 +46,14 @@ public class GitCommissioningUtils {
                     logger.info("The configuration of the git module was interrupted because the project '" + config.getIgnitionProjectName() + "' already exist.");
                     return;
                 }
+
+                if(config.getRepoURI() == null || config.getRepoBranch() == null
+                        || config.getIgnitionProjectName() == null || config.getIgnitionUserName() == null
+                        || config.getUserName() == null || (config.getUserPassword() == null && config.getSshKey() == null)
+                        || config.getUserEmail() == null){
+                    throw new RuntimeException("Incomplete git configuration file.");
+                }
+
                 projectManager.createProject(config.getIgnitionProjectName(), new ProjectManifest(config.getIgnitionProjectName(), "", false, false, ""), new ArrayList());
 
                 Path projectDir = getProjectFolderPath(config.getIgnitionProjectName());
@@ -113,7 +121,7 @@ public class GitCommissioningUtils {
     }
 
 
-    static protected GitCommissioningConfig parseConfigLines(byte[] ignitionConf) throws Exception {
+    static protected GitCommissioningConfig parseConfigLines(byte[] ignitionConf) {
         Pattern repoUriPattern = Pattern.compile("repo.uri");
         Pattern repoBranchPattern = Pattern.compile("repo.branch");
 
@@ -169,6 +177,8 @@ public class GitCommissioningUtils {
                     config.setSecretFromFilePath(Paths.get(line.split("=")[1]), true);
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new RuntimeException("Invalid git configuration file.", e);
         } catch (Exception e) {
             logger.error("An error occurred while importing the Git configuration file.", e);
             throw new RuntimeException(e);
