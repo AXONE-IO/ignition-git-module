@@ -99,8 +99,7 @@ public class GatewayScriptModule extends AbstractScriptModule {
         builder.colNames(List.of("resource", "type", "actor"));
         builder.colTypes(List.of(String.class, String.class, String.class));
 
-        try {
-            Git git = getGit(projectPath);
+        try (Git git = getGit(projectPath)){
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
@@ -112,7 +111,6 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Set<String> untracked = status.getUntracked();
             uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
-            git.close();
         } catch (Exception e) {
             logger.info(e.toString(), e);
         }

@@ -3,6 +3,9 @@ package com.axone_io.ignition.git.managers;
 import com.axone_io.ignition.git.SshTransportConfigCallback;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.axone_io.ignition.git.records.GitReposUsersRecord;
+import com.inductiveautomation.ignition.common.gson.Gson;
+import com.inductiveautomation.ignition.common.gson.JsonElement;
+import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.project.RuntimeProject;
 import com.inductiveautomation.ignition.common.project.resource.LastModification;
 import com.inductiveautomation.ignition.common.project.resource.ProjectResource;
@@ -13,15 +16,26 @@ import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.project.ProjectManager;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.*;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import simpleorm.dataset.SQuery;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -125,16 +139,27 @@ public class GitManager {
     public static SshTransportConfigCallback getSshTransportConfigCallback(GitReposUsersRecord user) {
         return new SshTransportConfigCallback(user.getSSHKey());
     }
+    public static int countOccurrences(Set<String> list, String prefix) {
+        int count = 0;
+        for (String str : list) {
+            if (str.startsWith(prefix)) {
+                count++;
+            }
+        }
+        return count;
+    }
 
     public static void uncommittedChangesBuilder(String projectName,
                                                  Set<String> updates,
                                                  String type,
                                                  List<String> changes,
-                                                 DatasetBuilder builder) throws IOException {
+                                                 DatasetBuilder builder) {
         for (String update : updates) {
             String[] rowData = new String[3];
             String actor = "unknown";
             String path = update;
+            boolean toAdd = true;
+
             if (hasActor(path)) {
                 String[] pathSplitted = update.split("/");
                 path = String.join("/", Arrays.copyOf(pathSplitted, pathSplitted.length - 1));
@@ -142,9 +167,16 @@ public class GitManager {
                 actor = getActor(projectName, path);
             }
 
+            if((update.endsWith("resource.json") && countOccurrences(updates, path) < 2)
+                    || update.endsWith("project.json")){
+                if(!isUpdatedResource(projectName, update)){
+                    toAdd = false;
+                }
+            }
+
             rowData[0] = path;
             rowData[1] = type;
-            if (!changes.contains(path)) {
+            if (toAdd && !changes.contains(path)) {
                 rowData[2] = actor;
                 changes.add(path);
                 builder.addRow((Object[]) rowData);
@@ -240,5 +272,62 @@ public class GitManager {
         StoredConfig config = git.getRepository().getConfig();
         config.setBoolean("http", null, "sslVerify", false);
         config.save();
+    }
+
+    public static boolean isUpdatedResource(String projectName, String resourcePath){
+        boolean isUpdatedResource;
+        Path projectPath = getProjectFolderPath(projectName);
+        String filePath = projectPath.toAbsolutePath() + "\\" +resourcePath.replace("/", "\\");
+
+        try (Repository repository = getGit(projectPath).getRepository()) {
+
+            // Get the ObjectId of the latest commit
+            ObjectId headId = repository.resolve("HEAD");
+
+            // Use RevWalk to traverse the commit history
+            try (RevWalk revWalk = new RevWalk(repository)) {
+                RevCommit commit = revWalk.parseCommit(headId);
+
+                // Get the tree of the commit
+                RevTree tree = commit.getTree();
+
+                // Use TreeWalk to traverse the files in the tree
+                try (TreeWalk treeWalk = new TreeWalk(repository)) {
+                    treeWalk.addTree(tree);
+                    treeWalk.setRecursive(true);
+                    treeWalk.setFilter(PathFilter.create(resourcePath));
+
+                    // Get the ObjectId of the file in the commit
+                    if (!treeWalk.next()) {
+                        throw new IllegalStateException("Did not find expected file " + resourcePath);
+                    }
+                    ObjectId objectId = treeWalk.getObjectId(0);
+
+                    // Get the contents of the file in the commit
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    try (ObjectReader reader = repository.newObjectReader()) {
+                        reader.open(objectId).copyTo(out);
+                    }
+                    Gson g = new Gson();
+
+                    String contentBefore = out.toString();
+                    JsonObject jsonBefore = (JsonObject) g.fromJson(contentBefore, JsonElement.class);
+                    jsonBefore.remove("files");
+                    jsonBefore.remove("attributes");
+
+
+                    String contentAfter = new String(Files.readAllBytes(Paths.get(filePath)));
+                    JsonObject jsonAfter = (JsonObject) g.fromJson(contentAfter, JsonElement.class);
+                    jsonAfter.remove("files");
+                    jsonAfter.remove("attributes");
+
+                    isUpdatedResource = !jsonBefore.equals(jsonAfter);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return isUpdatedResource;
     }
 }
