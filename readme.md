@@ -23,9 +23,10 @@ Exporting gateway configuration is simplified or even automated.
 ![Git Toolbar](./img/GitToolbar.png)
 - Status Bar :<br/>
 ![Git Toolbar](./img/GitStatusBar.png)
+- Commissioning configuration file for easy deployment.<br/>
 
 ## Module Documentation
-You can find the documentation of the module [HERE](https://www.axone-io.com/Files/Modules/GIT/1.0.0/doc/index.html), depending on its version.
+You can find the documentation of the module [HERE](https://www.axone-io.com/Files/Modules/GIT/1.0.1/doc/index.html), depending on its version.
 
 You will also find a download link to the signed version of the module.
 

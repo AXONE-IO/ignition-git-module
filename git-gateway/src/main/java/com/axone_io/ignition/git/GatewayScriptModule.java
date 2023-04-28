@@ -4,6 +4,7 @@ import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.inductiveautomation.ignition.common.BasicDataset;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
+
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import org.eclipse.jgit.api.*;
@@ -18,7 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.axone_io.ignition.git.managers.GitImageManager.exportImages;
 import static com.axone_io.ignition.git.managers.GitManager.*;
+
+import static com.axone_io.ignition.git.managers.GitTagManager.exportTag;
+import static com.axone_io.ignition.git.managers.GitThemeManager.exportTheme;
 
 public class GatewayScriptModule extends AbstractScriptModule {
     private final LoggerEx logger = LoggerEx.newBuilder().build(getClass());
@@ -34,19 +39,16 @@ public class GatewayScriptModule extends AbstractScriptModule {
             PullCommand pull = git.pull();
             setAuthentication(pull, projectName, userName);
 
-            PullResult result;
-
-            try {
-                result = pull.call();
-                if (!result.isSuccessful()) {
-                    logger.warn("Cannot pull from git");
-                } else {
-                    logger.info("Pull was successful.");
-                }
-            } catch (GitAPIException e) {
-                logger.error(e.toString());
-                throw new RuntimeException(e);
+            PullResult result = pull.call();
+            if (!result.isSuccessful()) {
+                logger.warn("Cannot pull from git");
+            } else {
+                logger.info("Pull was successful.");
             }
+
+        } catch (GitAPIException e) {
+            logger.error(e.toString());
+            throw new RuntimeException(e);
         }
         return true;
     }
@@ -58,17 +60,14 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
             setAuthentication(push, projectName, userName);
 
-            Iterable<PushResult> results;
-
-            try {
-                results = push.setPushAll().setPushTags().call();
-                for (PushResult result : results) {
-                    logger.trace(result.getMessages());
-                }
-            } catch (GitAPIException e) {
-                logger.error(e.toString(), e);
-                throw new RuntimeException(e);
+            Iterable<PushResult> results = push.setPushAll().setPushTags().call();
+            for (PushResult result : results) {
+                logger.trace(result.getMessages());
             }
+
+        } catch (GitAPIException e) {
+            logger.error(e.toString(), e);
+            throw new RuntimeException(e);
         }
         return true;
     }
@@ -76,19 +75,17 @@ public class GatewayScriptModule extends AbstractScriptModule {
     @Override
     protected boolean commitImpl(String projectName, String userName, List<String> changes, String message) {
         try (Git git = getGit(getProjectFolderPath(projectName))) {
-            try {
-                for (String change : changes) {
-                    git.add().addFilepattern(change).call();
-                    git.add().setUpdate(true).addFilepattern(change).call();
-                }
-                
-                CommitCommand commit = git.commit().setMessage(message);
-                setCommitAuthor(commit, projectName, userName);
-                commit.call();
-            } catch (GitAPIException e) {
-                logger.error(e.toString(), e);
-                throw new RuntimeException(e);
+            for (String change : changes) {
+                git.add().addFilepattern(change).call();
+                git.add().setUpdate(true).addFilepattern(change).call();
             }
+
+            CommitCommand commit = git.commit().setMessage(message);
+            setCommitAuthor(commit, projectName, userName);
+            commit.call();
+        } catch (GitAPIException e) {
+            logger.error(e.toString(), e);
+            throw new RuntimeException(e);
         }
         return true;
     }
@@ -102,8 +99,7 @@ public class GatewayScriptModule extends AbstractScriptModule {
         builder.colNames(List.of("resource", "type", "actor"));
         builder.colTypes(List.of(String.class, String.class, String.class));
 
-        try {
-            Git git = getGit(projectPath);
+        try (Git git = getGit(projectPath)){
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
@@ -115,7 +111,6 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Set<String> untracked = status.getUntracked();
             uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
-            git.close();
         } catch (Exception e) {
             logger.info(e.toString(), e);
         }
@@ -151,25 +146,25 @@ public class GatewayScriptModule extends AbstractScriptModule {
         Path projectFolderPath = getProjectFolderPath(projectName);
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
 
-        if (!Files.exists(projectFolderPath.resolve(".git"))) {
-            try{
-                Git git = Git.init().setDirectory(projectFolderPath.toFile()).call();
+        Path path = projectFolderPath.resolve(".git");
+        if (!Files.exists(path)) {
+            try (Git git = Git.init().setDirectory(projectFolderPath.toFile()).call()) {
                 disableSsl(git);
 
                 git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
 
                 git.add().addFilepattern(".").call();
-                
+
                 CommitCommand commit = git.commit().setMessage("Initial commit");
                 setCommitAuthor(commit, projectName, userName);
                 commit.call();
-                
+
                 PushCommand pushCommand = git.push();
+
                 setAuthentication(pushCommand, projectName, userName);
                 pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
-            }catch (Exception e){
+            } catch (Exception e) {
                 logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.");
-                throw new RuntimeException(e);
             }
         }
     }

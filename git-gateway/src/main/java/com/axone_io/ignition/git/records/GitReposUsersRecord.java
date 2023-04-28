@@ -1,24 +1,12 @@
 package com.axone_io.ignition.git.records;
 
-import com.inductiveautomation.ignition.common.user.UserSourceEditCapability;
 import com.inductiveautomation.ignition.gateway.localdb.persistence.*;
-import com.inductiveautomation.ignition.gateway.model.GatewayContext;
-import com.inductiveautomation.ignition.gateway.web.components.RecordEditMode;
-import com.inductiveautomation.ignition.gateway.web.components.actions.EditRecordAction;
 import com.inductiveautomation.ignition.gateway.web.components.editors.PasswordEditorSource;
 import com.inductiveautomation.ignition.gateway.web.components.editors.TextAreaEditorSource;
-import com.inductiveautomation.ignition.gateway.web.components.user.UserEditForm;
-import com.inductiveautomation.ignition.gateway.web.util.UniqueStringValidator;
-import org.apache.wicket.markup.html.form.EmailTextField;
-import org.apache.wicket.validation.IValidator;
 import org.apache.wicket.validation.validator.EmailAddressValidator;
-import org.apache.wicket.validation.validator.StringValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import simpleorm.dataset.SFieldFlags;
-import simpleorm.dataset.SQuery;
-
-import java.util.List;
 
 public class GitReposUsersRecord extends PersistentRecord {
     private static final Logger logger = LoggerFactory.getLogger(GitReposUsersRecord.class);
@@ -33,33 +21,74 @@ public class GitReposUsersRecord extends PersistentRecord {
 
     public static final IdentityField Id = new IdentityField(META);
     public static final LongField ProjectId = new LongField(META, "ProjectId");
-    public static final ReferenceField<GitProjectsConfigRecord> ProjectName = new ReferenceField<> (META, GitProjectsConfigRecord.META, "ProjectName", ProjectId);
-    public static final ReferenceField<GitProjectsConfigRecord> URI = new ReferenceField<> (META, GitProjectsConfigRecord.META, "URI", ProjectId);
+    public static final ReferenceField<GitProjectsConfigRecord> ProjectName = new ReferenceField<>(META, GitProjectsConfigRecord.META, "ProjectName", ProjectId);
+    public static final ReferenceField<GitProjectsConfigRecord> URI = new ReferenceField<>(META, GitProjectsConfigRecord.META, "URI", ProjectId);
 
     public static final StringField IgnitionUser = new StringField(META, "IgnitionUser", SFieldFlags.SPRIMARY_KEY, SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
     public static final StringField SSHKey = new StringField(META, "SSHKey");
 
     public static final StringField UserName = new StringField(META, "UserName", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
 
-    public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
+    public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE).setDefault("");
     public static final EncodedStringField Password = new EncodedStringField(META, "Password");
 
     static final Category UserProperties = new Category("GitReposUsersRecord.Category.UserProperties", 1000).include(ProjectName, IgnitionUser, UserName, Email, SSHKey, Password);
 
-    public int getId(){
+    public int getId() {
         return this.getInt(Id);
     }
-    public int getProjectId(){
+
+    public int getProjectId() {
         return this.getInt(ProjectId);
     }
-    public String getUserName(){ return this.getString(UserName); }
-    public String getEmail(){ return this.getString(Email); }
-    public String getIgnitionUser(){ return this.getString(IgnitionUser); }
-    public String getProjectName(){ return this.getString(ProjectName); }
-    public String getPassword(){ return this.getString(Password); }
-    public String getSSHKey(){ return this.getString(SSHKey); }
 
-    public void setProjectId(long projectId){ this.setLong(ProjectId, projectId); }
+    public String getUserName() {
+        return this.getString(UserName);
+    }
+
+    public String getEmail() {
+        return this.getString(Email);
+    }
+
+    public String getIgnitionUser() {
+        return this.getString(IgnitionUser);
+    }
+
+    public String getProjectName() {
+        return this.getString(ProjectName);
+    }
+
+    public String getPassword() {
+        return this.getString(Password);
+    }
+
+    public String getSSHKey() {
+        return this.getString(SSHKey);
+    }
+
+    public void setUserName(String userName) {
+        setString(UserName, userName);
+    }
+
+    public void setPassword(String password) {
+        setString(Password, password);
+    }
+
+    public void setIgnitionUser(String ignitionUser) {
+        setString(IgnitionUser, ignitionUser);
+    }
+
+    public void setSSHKey(String sshKey) {
+        setString(SSHKey, sshKey);
+    }
+
+    public void setEmail(String email) {
+        setString(Email, email);
+    }
+
+    public void setProjectId(long projectId) {
+        this.setLong(ProjectId, projectId);
+    }
 
     static {
         ProjectName.getFormMeta().setEnabled(false);

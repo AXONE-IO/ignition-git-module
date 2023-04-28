@@ -1,17 +1,15 @@
 package com.axone_io.ignition.git;
 
-import com.axone_io.ignition.git.records.GitReposUsersRecord;
+import com.axone_io.ignition.git.commissioning.utils.GitCommissioningUtils;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
+import com.axone_io.ignition.git.records.GitReposUsersRecord;
 import com.axone_io.ignition.git.web.GitProjectsConfigPage;
 import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
-import com.inductiveautomation.ignition.common.script.ScriptManager;
-import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.inductiveautomation.ignition.gateway.clientcomm.ClientReqSession;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
-import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,15 +41,10 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public void setup(GatewayContext gatewayContext) {
-        try {
-            context = gatewayContext;
-            scriptModule = new GatewayScriptModule(context);
-            BundleUtil.get().addBundle("bundle_git", getClass(), "bundle_git");
-            verifySchema(gatewayContext);
-        } catch (Exception e) {
-            logger.error(e.toString(), e);
-            throw new RuntimeException(e);
-        }
+        context = gatewayContext;
+        scriptModule = new GatewayScriptModule(context);
+        BundleUtil.get().addBundle("bundle_git", getClass(), "bundle_git");
+        verifySchema(gatewayContext);
 
         logger.info("setup()");
     }
@@ -66,6 +59,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public void startup(LicenseState licenseState) {
+        GitCommissioningUtils.loadConfiguration();
+
         logger.info("startup()");
     }
 
