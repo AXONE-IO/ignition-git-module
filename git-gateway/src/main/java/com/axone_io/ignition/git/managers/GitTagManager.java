@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import static com.axone_io.ignition.git.GatewayHook.context;
 import static com.axone_io.ignition.git.managers.GitManager.clearDirectory;
 import static com.axone_io.ignition.git.managers.GitManager.getProjectFolderPath;
+import static com.inductiveautomation.ignition.common.tags.TagUtilities.TAG_GSON;
 
 public class GitTagManager {
     private final static LoggerEx logger = LoggerEx.newBuilder().build(GitTagManager.class);
@@ -75,7 +76,7 @@ public class GitTagManager {
 
                 Path newFile = tagFolderPath.resolve(tagProvider.getName() + ".json");
 
-                Files.writeString(newFile, sortedJson.toString());
+                Files.writeString(newFile, TAG_GSON.toJson(sortedJson));
             }
         } catch (Exception e) {
             logger.error(e.toString(), e);
