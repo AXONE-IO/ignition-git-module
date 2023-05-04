@@ -12,6 +12,7 @@ import com.inductiveautomation.ignition.gateway.web.components.actions.NewRecord
 import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.wicket.markup.html.WebMarkupContainer;
+import simpleorm.dataset.SFieldFlags;
 
 import static com.axone_io.ignition.git.web.GitProjectsConfigPage.MENU_ENTRY;
 
@@ -32,10 +33,11 @@ public class GitReposUsersPage extends RecordActionTable<GitReposUsersRecord> {
     protected WebMarkupContainer newRecordAction(String id) {
         return new NewRecordAction<>(id, this.configPage, this, GitReposUsersRecord.META) {
             private static final long serialVersionUID = 1L;
+
             protected ConfigPanel newRecordEditPanel(GitReposUsersRecord newRecord) {
-                if(gitProjectsConfigRecord != null) newRecord.setProjectId(gitProjectsConfigRecord.getId());
+                if (gitProjectsConfigRecord != null) newRecord.setProjectId(gitProjectsConfigRecord.getId());
                 setupPanel(gitProjectsConfigRecord, newRecord, RecordEditMode.ADD);
-                return new GitReposUsersEditPage(getConfigPage(),  new GitReposUsersPage(configPage, gitProjectsConfigRecord), newRecord);
+                return new GitReposUsersEditPage(getConfigPage(), new GitReposUsersPage(configPage, gitProjectsConfigRecord), newRecord);
             }
 
             protected void setupNewRecord(GitReposUsersRecord newRecord) {
@@ -62,14 +64,15 @@ public class GitReposUsersPage extends RecordActionTable<GitReposUsersRecord> {
         return MENU_ENTRY.getMenuLocation();
     }
 
-    void setupPanel(GitProjectsConfigRecord projectRecord, GitReposUsersRecord record, RecordEditMode mode){
+    void setupPanel(GitProjectsConfigRecord projectRecord, GitReposUsersRecord record, RecordEditMode mode) {
         boolean sshAuth = projectRecord.isSSHAuthentication();
         GitReposUsersRecord.SSHKey.getFormMeta().setVisible(sshAuth);
         GitReposUsersRecord.UserName.getFormMeta().setVisible(!sshAuth);
+        if (!sshAuth) {
+            GitReposUsersRecord.UserName.addFlag(SFieldFlags.SMANDATORY);
+        }
         GitReposUsersRecord.Password.getFormMeta().setVisible(!sshAuth);
     }
-
-
 
 
 }
