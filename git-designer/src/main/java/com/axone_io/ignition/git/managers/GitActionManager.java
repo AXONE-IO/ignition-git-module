@@ -15,6 +15,8 @@ import static com.axone_io.ignition.git.DesignerHook.rpc;
 import static com.axone_io.ignition.git.actions.GitBaseAction.handleCommitAction;
 
 public class GitActionManager {
+    static CommitPopup commitPopup;
+
     public static Object[][] getCommitPopupData(String projectName, String userName) {
         List<ChangeOperation> changes = DesignerHook.changes;
 
@@ -27,11 +29,11 @@ public class GitActionManager {
             resourcesChangedId.add(pri.getResourcePath().toString());
         }
 
-        for(int i = 0; i < ds.getRowCount(); i++){
-            String resource = (String) ds.getValueAt(i,"resource");
+        for (int i = 0; i < ds.getRowCount(); i++) {
+            String resource = (String) ds.getValueAt(i, "resource");
 
             boolean toAdd = resourcesChangedId.contains(resource);
-            Object[] row = {toAdd, resource, ds.getValueAt(i,"type"), ds.getValueAt(i,"actor")};
+            Object[] row = {toAdd, resource, ds.getValueAt(i, "type"), ds.getValueAt(i, "actor")};
             data[i] = row;
         }
 
@@ -39,15 +41,23 @@ public class GitActionManager {
     }
 
     public static void showCommitPopup(String projectName, String userName) {
-        new CommitPopup(GitActionManager.getCommitPopupData(projectName, userName), context.getFrame()) {
-            @Override
-            public void onActionPerformed(List<String> changes, String commitMessage) {
-                handleCommitAction(changes, commitMessage);
-            }
-        };
+        Object[][] data = GitActionManager.getCommitPopupData(projectName, userName);
+        if (commitPopup != null) {
+            commitPopup.setData(data);
+            commitPopup.setVisible(true);
+            commitPopup.toFront();
+        } else {
+            commitPopup = new CommitPopup(data, context.getFrame()) {
+                @Override
+                public void onActionPerformed(List<String> changes, String commitMessage) {
+                    handleCommitAction(changes, commitMessage);
+                    resetMessage();
+                }
+            };
+        }
     }
 
-    public static void showConfirmPopup(String message, int messageType){
+    public static void showConfirmPopup(String message, int messageType) {
         JOptionPane.showConfirmDialog(context.getFrame(),
                 message, "Info", JOptionPane.DEFAULT_OPTION, messageType);
     }

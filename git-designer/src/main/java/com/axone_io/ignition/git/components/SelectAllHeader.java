@@ -36,6 +36,8 @@ public class SelectAllHeader extends JCheckBox implements TableCellRenderer {
         setBorderPainted(true);
         setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1,new Color(-4143670)));
         tableModel.addTableModelListener(new ModelHandler());
+
+        refreshState();
     }
 
     @Override
@@ -87,10 +89,7 @@ public class SelectAllHeader extends JCheckBox implements TableCellRenderer {
 
         @Override
         public void tableChanged(TableModelEvent e) {
-            if (needsToggle()) {
-                doClick();
-                header.repaint();
-            }
+            refreshState();
         }
     }
 
@@ -104,6 +103,13 @@ public class SelectAllHeader extends JCheckBox implements TableCellRenderer {
             allFalse &= !b;
         }
         return allTrue && !isSelected() || allFalse && isSelected();
+    }
+
+    private void refreshState(){
+        if (needsToggle()) {
+            doClick();
+            header.repaint();
+        }
     }
 }
 
