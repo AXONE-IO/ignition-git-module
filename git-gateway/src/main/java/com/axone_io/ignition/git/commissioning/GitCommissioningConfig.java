@@ -19,6 +19,8 @@ public class GitCommissioningConfig {
     private boolean importTags = false;
     private boolean importThemes = false;
 
+    private String initDefaultBranch;
+
     public String getRepoURI() {
         return repoURI;
     }
@@ -116,5 +118,13 @@ public class GitCommissioningConfig {
                 this.userPassword = secret;
             }
         }
+    }
+
+    public String getInitDefaultBranch() {
+        return initDefaultBranch;
+    }
+
+    public void setInitDefaultBranch(String initDefaultBranch) {
+        this.initDefaultBranch = initDefaultBranch;
     }
 }

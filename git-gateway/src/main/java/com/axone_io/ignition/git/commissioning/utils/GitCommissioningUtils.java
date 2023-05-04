@@ -32,6 +32,7 @@ import static com.axone_io.ignition.git.managers.GitManager.*;
 public class GitCommissioningUtils {
     private final static LoggerEx logger = LoggerEx.newBuilder().build(GitCommissioningUtils.class);
 
+    public static GitCommissioningConfig config;
 
     @Subscribe
     public static void loadConfiguration() {
@@ -40,17 +41,17 @@ public class GitCommissioningUtils {
         ProjectManager projectManager = context.getProjectManager();
 
         try {
-            if (ignitionConf.exists() && ignitionConf.isFile()){
-                GitCommissioningConfig config = parseConfigLines(FileUtils.readFileToByteArray(ignitionConf));
+            if (ignitionConf.exists() && ignitionConf.isFile()) {
+                config = parseConfigLines(FileUtils.readFileToByteArray(ignitionConf));
                 if (projectManager.getProjectNames().contains(config.getIgnitionProjectName())) {
                     logger.info("The configuration of the git module was interrupted because the project '" + config.getIgnitionProjectName() + "' already exist.");
                     return;
                 }
 
-                if(config.getRepoURI() == null || config.getRepoBranch() == null
+                if (config.getRepoURI() == null || config.getRepoBranch() == null
                         || config.getIgnitionProjectName() == null || config.getIgnitionUserName() == null
                         || config.getUserName() == null || (config.getUserPassword() == null && config.getSshKey() == null)
-                        || config.getUserEmail() == null){
+                        || config.getUserEmail() == null) {
                     throw new RuntimeException("Incomplete git configuration file.");
                 }
 
@@ -71,10 +72,10 @@ public class GitCommissioningUtils {
                 projectsConfigRecord.setURI(config.getRepoURI());
 
                 String userSecretFilePath = System.getenv("GATEWAY_GIT_USER_SECRET_FILE");
-                if (userSecretFilePath != null){
+                if (userSecretFilePath != null) {
                     config.setSecretFromFilePath(Paths.get(userSecretFilePath), projectsConfigRecord.isSSHAuthentication());
                 }
-                if (config.getSshKey() == null && config.getUserPassword() == null){
+                if (config.getSshKey() == null && config.getUserPassword() == null) {
                     throw new Exception("Git User Password or SSHKey not configured.");
                 }
                 persistenceInterface.save(projectsConfigRecord);
@@ -83,7 +84,7 @@ public class GitCommissioningUtils {
                 reposUsersRecord.setUserName(config.getUserName());
                 reposUsersRecord.setIgnitionUser(config.getIgnitionUserName());
                 reposUsersRecord.setProjectId(projectsConfigRecord.getId());
-                if (projectsConfigRecord.isSSHAuthentication()){
+                if (projectsConfigRecord.isSSHAuthentication()) {
                     reposUsersRecord.setSSHKey(config.getSshKey());
                 } else {
                     reposUsersRecord.setPassword(config.getUserPassword());
@@ -111,7 +112,7 @@ public class GitCommissioningUtils {
                 if (config.isImportImages()) {
                     GitImageManager.importImages(config.getIgnitionProjectName());
                 }
-            }else{
+            } else {
                 logger.info("No git configuration file was found.");
             }
 
@@ -137,6 +138,8 @@ public class GitCommissioningUtils {
         Pattern importThemes = Pattern.compile("commissioning.import.themes");
         Pattern importImages = Pattern.compile("commissioning.import.images");
 
+        Pattern initDefaultBranch = Pattern.compile("init.defaultBranch");
+
         GitCommissioningConfig config = new GitCommissioningConfig();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(ignitionConf), StandardCharsets.UTF_8))) {
             String line;
@@ -152,6 +155,7 @@ public class GitCommissioningUtils {
                 Matcher importThemesMatcher = importThemes.matcher(line);
                 Matcher importImagesMatcher = importImages.matcher(line);
                 Matcher sshKeyFilePathMatcher = sshKeyFilePath.matcher(line);
+                Matcher initDefaultBranchPathMatcher = initDefaultBranch.matcher(line);
 
                 if (repoUriMatcher.find()) {
                     config.setRepoURI(line.split("=")[1]);
@@ -175,6 +179,8 @@ public class GitCommissioningUtils {
                     config.setImportImages(Boolean.parseBoolean(line.split("=")[1]));
                 } else if (sshKeyFilePathMatcher.find()) {
                     config.setSecretFromFilePath(Paths.get(line.split("=")[1]), true);
+                } else if (initDefaultBranchPathMatcher.find()) {
+                    config.setInitDefaultBranch(line.split("=")[1]);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException e) {
