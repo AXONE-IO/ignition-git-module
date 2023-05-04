@@ -6,7 +6,7 @@
     <parent>
         <artifactId>git</artifactId>
         <groupId>com.axone_io.ignition</groupId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
 
     <artifactId>git-designer</artifactId>

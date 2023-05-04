@@ -26,7 +26,7 @@ Exporting gateway configuration is simplified or even automated.
 - Commissioning configuration file for easy deployment.<br/>
 
 ## Module Documentation
-You can find the documentation of the module [HERE](https://www.axone-io.com/Files/Modules/GIT/1.0.1/doc/index.html), depending on its version.
+You can find the documentation of the module [HERE](https://www.axone-io.com/Files/Modules/GIT/1.0.2/doc/index.html), depending on its version.
 
 You will also find a download link to the signed version of the module.
 

@@ -17,7 +17,7 @@ services:
       - default
     volumes:
       - gateway_data:/usr/local/bin/ignition/data
-      - ./modules/Git-1.0.1.modl:/usr/local/bin/ignition/user-lib/modules/Git-1.0.1.modl
+      - ./modules/Git-1.0.2.modl:/usr/local/bin/ignition/user-lib/modules/Git-1.0.2.modl
       - ./gw-init/git.conf:/usr/local/bin/ignition/data/git.conf
     secrets:
       - gateway-git-user-secret
