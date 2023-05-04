@@ -1,10 +1,10 @@
 package com.axone_io.ignition.git;
 
+import com.axone_io.ignition.git.commissioning.utils.GitCommissioningUtils;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.inductiveautomation.ignition.common.BasicDataset;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
-
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import org.eclipse.jgit.api.*;
@@ -21,7 +21,6 @@ import java.util.Set;
 
 import static com.axone_io.ignition.git.managers.GitImageManager.exportImages;
 import static com.axone_io.ignition.git.managers.GitManager.*;
-
 import static com.axone_io.ignition.git.managers.GitTagManager.exportTag;
 import static com.axone_io.ignition.git.managers.GitThemeManager.exportTheme;
 
@@ -99,7 +98,7 @@ public class GatewayScriptModule extends AbstractScriptModule {
         builder.colNames(List.of("resource", "type", "actor"));
         builder.colTypes(List.of(String.class, String.class, String.class));
 
-        try (Git git = getGit(projectPath)){
+        try (Git git = getGit(projectPath)) {
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
@@ -147,8 +146,10 @@ public class GatewayScriptModule extends AbstractScriptModule {
         GitProjectsConfigRecord gitProjectsConfigRecord = getGitProjectConfigRecord(projectName);
 
         Path path = projectFolderPath.resolve(".git");
+
         if (!Files.exists(path)) {
-            try (Git git = Git.init().setDirectory(projectFolderPath.toFile()).call()) {
+            String defaultBranch = GitCommissioningUtils.config != null ? GitCommissioningUtils.config.getInitDefaultBranch() : null;
+            try (Git git = Git.init().setInitialBranch(defaultBranch).setDirectory(projectFolderPath.toFile()).call()) {
                 disableSsl(git);
 
                 git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
@@ -162,7 +163,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
                 PushCommand pushCommand = git.push();
 
                 setAuthentication(pushCommand, projectName, userName);
-                pushCommand.setRemote("origin").setRefSpecs(new RefSpec("master")).call();
+
+                pushCommand.setRemote("origin").setRefSpecs(new RefSpec(defaultBranch)).call();
             } catch (Exception e) {
                 logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.");
             }
