@@ -26,9 +26,7 @@ public class GitReposUsersRecord extends PersistentRecord {
 
     public static final StringField IgnitionUser = new StringField(META, "IgnitionUser", SFieldFlags.SPRIMARY_KEY, SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
     public static final StringField SSHKey = new StringField(META, "SSHKey");
-
-    public static final StringField UserName = new StringField(META, "UserName", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE);
-
+    public static final StringField UserName = new StringField(META, "UserName");
     public static final StringField Email = new StringField(META, "Email", SFieldFlags.SMANDATORY, SFieldFlags.SDESCRIPTIVE).setDefault("");
     public static final EncodedStringField Password = new EncodedStringField(META, "Password");
 
