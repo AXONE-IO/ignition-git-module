@@ -164,7 +164,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
 
                 setAuthentication(pushCommand, projectName, userName);
 
-                pushCommand.setRemote("origin").setRefSpecs(new RefSpec(defaultBranch)).call();
+                String branch = git.getRepository().getBranch();
+                pushCommand.setRemote("origin").setRefSpecs(new RefSpec(branch)).call();
             } catch (Exception e) {
                 logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.");
             }
