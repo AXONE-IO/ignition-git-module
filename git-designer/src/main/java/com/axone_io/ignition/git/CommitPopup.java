@@ -46,31 +46,10 @@ public class CommitPopup extends JFrame {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setVisible(true);
 
-        String[] columnNames = {"", "Resource Name", "Type", "Author"};
-
-        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
-            public Class<?> getColumnClass(int column) {
-                switch (column) {
-                    case 0:
-                        return Boolean.class;
-                    case 1:
-                    case 2:
-                    case 3:
-                    default:
-                        return String.class;
-                }
-            }
-        };
         changesTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-
-        changesTable.setModel(model);
-        changesTable.getColumn("").setPreferredWidth(20);
-        changesTable.getColumn("Resource Name").setPreferredWidth(330);
-        changesTable.getColumn("Type").setPreferredWidth(100);
-        changesTable.getColumn("Author").setPreferredWidth(100);
-        TableColumn tc = changesTable.getColumnModel().getColumn(0);
-        tc.setHeaderRenderer(new SelectAllHeader(changesTable, 0));
         changesTable.getTableHeader().setReorderingAllowed(false);
+
+        setData(data);
 
         commitBtn.addActionListener(e -> {
             List<String> changes = new ArrayList<>();
@@ -89,6 +68,36 @@ public class CommitPopup extends JFrame {
         pack();
         CommonUI.centerComponent(this, parent);
         toFront();
+    }
+
+    public void resetMessage() {
+        messageTextArea.setText("");
+    }
+
+    public void setData(Object[][] data) {
+        String[] columnNames = {"", "Resource Name", "Type", "Author"};
+        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+            public Class<?> getColumnClass(int column) {
+                switch (column) {
+                    case 0:
+                        return Boolean.class;
+                    case 1:
+                    case 2:
+                    case 3:
+                    default:
+                        return String.class;
+                }
+            }
+        };
+
+        changesTable.setModel(model);
+        changesTable.getColumn("").setPreferredWidth(20);
+        changesTable.getColumn("Resource Name").setPreferredWidth(330);
+        changesTable.getColumn("Type").setPreferredWidth(100);
+        changesTable.getColumn("Author").setPreferredWidth(100);
+
+        TableColumn tc = changesTable.getColumnModel().getColumn(0);
+        tc.setHeaderRenderer(new SelectAllHeader(changesTable, 0));
     }
 
 
