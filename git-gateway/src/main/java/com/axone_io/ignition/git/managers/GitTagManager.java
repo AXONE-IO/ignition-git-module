@@ -8,6 +8,7 @@ import com.inductiveautomation.ignition.common.tags.config.CollisionPolicy;
 import com.inductiveautomation.ignition.common.tags.config.TagConfigurationModel;
 import com.inductiveautomation.ignition.common.tags.model.TagPath;
 import com.inductiveautomation.ignition.common.tags.model.TagProvider;
+import com.inductiveautomation.ignition.common.tags.model.TagProviderInformation;
 import com.inductiveautomation.ignition.common.tags.paths.BasicTagPath;
 import com.inductiveautomation.ignition.common.tags.paths.parser.TagPathParser;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
@@ -63,6 +64,16 @@ public class GitTagManager {
             Files.createDirectories(tagFolderPath);
 
             for (TagProvider tagProvider : context.getTagManager().getTagProviders()) {
+                try {
+                    CompletableFuture<TagProviderInformation> cfProviderInfo = tagProvider.getStatusInformation();
+                    TagProviderInformation providerInfo = cfProviderInfo.get();
+                    if (!providerInfo.isAvailable()) {
+                        continue;
+                    }
+                } catch (Exception e) {
+                    logger.error(e.toString(), e);
+                }
+
                 TagPath typesPath = TagPathParser.parse("");
                 List<TagPath> tagPaths = new ArrayList<>();
                 tagPaths.add(typesPath);
