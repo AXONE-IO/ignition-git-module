@@ -64,16 +64,6 @@ public class GitTagManager {
             Files.createDirectories(tagFolderPath);
 
             for (TagProvider tagProvider : context.getTagManager().getTagProviders()) {
-                try {
-                    CompletableFuture<TagProviderInformation> cfProviderInfo = tagProvider.getStatusInformation();
-                    TagProviderInformation providerInfo = cfProviderInfo.get();
-                    if (!providerInfo.isAvailable()) {
-                        continue;
-                    }
-                } catch (Exception e) {
-                    logger.error(e.toString(), e);
-                }
-
                 TagPath typesPath = TagPathParser.parse("");
                 List<TagPath> tagPaths = new ArrayList<>();
                 tagPaths.add(typesPath);
