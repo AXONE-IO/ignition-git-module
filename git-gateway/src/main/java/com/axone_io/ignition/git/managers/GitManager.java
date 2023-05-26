@@ -202,8 +202,14 @@ public class GitManager {
         ProjectManager projectManager = context.getProjectManager();
         RuntimeProject project = projectManager.getProject(projectName).get();
 
-        ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
-        return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+        ResourcePath resourcePath = getResourcePath(path);
+        try {
+            ProjectResource projectResource = project.getResource(resourcePath).get();
+            return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+        } catch (Exception e) {
+            logger.error(String.valueOf(e), e);
+            return "unknown";
+        }
     }
 
     public static List getAddedFiles(String projectName) {

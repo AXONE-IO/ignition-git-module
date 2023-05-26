@@ -8,6 +8,7 @@ import com.inductiveautomation.ignition.common.tags.config.CollisionPolicy;
 import com.inductiveautomation.ignition.common.tags.config.TagConfigurationModel;
 import com.inductiveautomation.ignition.common.tags.model.TagPath;
 import com.inductiveautomation.ignition.common.tags.model.TagProvider;
+import com.inductiveautomation.ignition.common.tags.model.TagProviderInformation;
 import com.inductiveautomation.ignition.common.tags.paths.BasicTagPath;
 import com.inductiveautomation.ignition.common.tags.paths.parser.TagPathParser;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
