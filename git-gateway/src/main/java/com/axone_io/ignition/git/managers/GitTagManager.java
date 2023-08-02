@@ -64,20 +64,29 @@ public class GitTagManager {
             Files.createDirectories(tagFolderPath);
 
             for (TagProvider tagProvider : context.getTagManager().getTagProviders()) {
-                TagPath typesPath = TagPathParser.parse("");
-                List<TagPath> tagPaths = new ArrayList<>();
-                tagPaths.add(typesPath);
+                logger.info("Attempting to export tags for provider " + tagProvider.getName());
+                try {
+                    CompletableFuture<TagProviderInformation> cfProviderInfo = tagProvider.getStatusInformation();
+                    TagProviderInformation providerInfo = cfProviderInfo.get();
+                    if (providerInfo == null || !providerInfo.isAvailable()) {
+                        logger.info("Tag provider unavailable. Skipping export for provider " + tagProvider.getName());
+                        continue;
+                    }
 
-                CompletableFuture<List<TagConfigurationModel>> cfTagModels =
-                        tagProvider.getTagConfigsAsync(tagPaths, true, true);
-                List<TagConfigurationModel> tModels = cfTagModels.get();
-
-                JsonObject json = TagUtilities.toJsonObject(tModels.get(0));
-                JsonElement sortedJson = JsonUtilities.createDeterministicCopy(json);
-
-                Path newFile = tagFolderPath.resolve(tagProvider.getName() + ".json");
-
-                Files.writeString(newFile, TAG_GSON.toJson(sortedJson));
+                    TagPath typesPath = TagPathParser.parse("");
+                    List<TagPath> tagPaths = new ArrayList<>();
+                    tagPaths.add(typesPath);
+                    CompletableFuture<List<TagConfigurationModel>> cfTagModels =
+                            tagProvider.getTagConfigsAsync(tagPaths, true, true);
+                    List<TagConfigurationModel> tModels = cfTagModels.get();
+                    JsonObject json = TagUtilities.toJsonObject(tModels.get(0));
+                    JsonElement sortedJson = JsonUtilities.createDeterministicCopy(json);
+                    Path newFile = tagFolderPath.resolve(tagProvider.getName() + ".json");
+                    Files.writeString(newFile, TAG_GSON.toJson(sortedJson));
+                    logger.info("Successfully exported tags for provider " + tagProvider.getName());
+                } catch (Exception e) {
+                    logger.error(e.toString(), e);
+                }
             }
         } catch (Exception e) {
             logger.error(e.toString(), e);
