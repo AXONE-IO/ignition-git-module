@@ -20,8 +20,6 @@ import javax.swing.Timer;
 import java.util.*;
 import java.util.List;
 
-import static com.axone_io.ignition.git.managers.GitActionManager.showCommitPopup;
-
 public class DesignerHook extends AbstractDesignerModuleHook {
 
     public static GitScriptInterface rpc = ModuleRPCFactory.create(
@@ -110,8 +108,6 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     @Override
     public void notifyProjectSaveDone(){
         super.notifyProjectSaveDone();
-
-        showCommitPopup(projectName, userName);
     }
 
     @Override
@@ -126,6 +122,4 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
         gitUserTimer.stop();
     }
-
-
 }

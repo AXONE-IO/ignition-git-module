@@ -36,7 +36,6 @@ public class GitProjectManager {
             logger.error("An error occurred while importing '" + projectName + "' project.", e);
             throw new RuntimeException(e);
         }
-
     }
 
     public static Set<Map.Entry<String, byte[]>> listFiles(Path projectPath) {
@@ -83,25 +82,22 @@ public class GitProjectManager {
         Set<StringPath> createdFolders = new HashSet<>();
 
         Set<Map.Entry<String, byte[]>> files = listFiles(projectPath);
-        files.removeIf(e -> !isAnIgnitionResource(e.getKey()));
         files.stream().collect(Collectors.groupingBy(e -> StringUtils.substringBeforeLast(e.getKey(), "/")))
                 .forEach((resourcePath, listOfFileNodes) -> {
-                    if (isAnIgnitionResource(resourcePath)) {
-                        StringPath stringPath = StringPath.parse(resourcePath);
-                        resources.addAll(createParentFolderResources(projectName, stringPath, createdFolders));
-                        String manifestPath = String.format("%s/%s", resourcePath, "resource.json");
+                    StringPath stringPath = StringPath.parse(resourcePath);
+                    resources.addAll(createParentFolderResources(projectName, stringPath, createdFolders));
+                    String manifestPath = String.format("%s/%s", resourcePath, "resource.json");
 
-                        ProjectResourceManifest resourceManifest = removeResourceManifest(manifestPath, listOfFileNodes);
+                    ProjectResourceManifest resourceManifest = removeResourceManifest(manifestPath, listOfFileNodes);
 
-                        if (resourceManifest != null) {
+                    if (resourceManifest != null) {
 
-                            Map<String, byte[]> dataMap = createDataMap(resourceManifest, listOfFileNodes);
+                        Map<String, byte[]> dataMap = createDataMap(resourceManifest, listOfFileNodes);
 
-                            resources.add(createResourceBuilder(projectName, stringPath, resourceManifest, dataMap).build());
-                        } else if (!createdFolders.contains(stringPath)) {
-                            resources.add(createResourceBuilder(projectName, stringPath, ProjectResourceManifest.newBuilder().build(), new HashMap<>()).setFolder(true).build());
-                            createdFolders.add(stringPath);
-                        }
+                        resources.add(createResourceBuilder(projectName, stringPath, resourceManifest, dataMap).build());
+                    } else if (!createdFolders.contains(stringPath)) {
+                        resources.add(createResourceBuilder(projectName, stringPath, ProjectResourceManifest.newBuilder().build(), new HashMap<>()).setFolder(true).build());
+                        createdFolders.add(stringPath);
                     }
                 });
 
