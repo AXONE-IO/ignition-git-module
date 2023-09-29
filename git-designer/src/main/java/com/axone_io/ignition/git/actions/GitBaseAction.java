@@ -12,8 +12,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 
 import static com.axone_io.ignition.git.DesignerHook.*;
-import static com.axone_io.ignition.git.managers.GitActionManager.showCommitPopup;
-import static com.axone_io.ignition.git.managers.GitActionManager.showConfirmPopup;
+import static com.axone_io.ignition.git.managers.GitActionManager.*;
 
 public class GitBaseAction extends BaseAction {
     private static final Logger logger = LoggerFactory.getLogger(GitBaseAction.class);
@@ -74,6 +73,18 @@ public class GitBaseAction extends BaseAction {
         }
     }
 
+    public static void handlePullAction(boolean importTags, boolean importTheme, boolean importImages) {
+        String message = BundleUtil.get().getStringLenient(GitActionType.PULL.baseBundleKey + ".ConfirmMessage");
+        int messageType = JOptionPane.INFORMATION_MESSAGE;
+
+        try {
+            rpc.pull(projectName, userName, importTags, importTheme, importImages);
+            SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
+        } catch (Exception ex) {
+            ErrorUtil.showError(ex);
+        }
+    }
+
     public static void handleAction(GitActionType type) {
         String message = BundleUtil.get().getStringLenient(type.baseBundleKey + ".ConfirmMessage");
         int messageType = JOptionPane.INFORMATION_MESSAGE;
@@ -82,7 +93,8 @@ public class GitBaseAction extends BaseAction {
         try {
             switch (type) {
                 case PULL:
-                    rpc.pull(projectName, userName);
+                    confirmPopup = Boolean.FALSE;
+                    showPullPopup(projectName, userName);
                     break;
                 case PUSH:
                     rpc.push(projectName, userName);
@@ -96,7 +108,6 @@ public class GitBaseAction extends BaseAction {
                     break;
             }
             if(confirmPopup) SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
-
         } catch (Exception ex) {
             ErrorUtil.showError(ex);
         }

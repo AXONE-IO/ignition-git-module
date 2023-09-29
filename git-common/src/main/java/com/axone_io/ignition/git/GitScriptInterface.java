@@ -6,7 +6,8 @@ import java.util.List;
 
 public interface GitScriptInterface {
 
-    boolean pull(String projectName, String userName) throws Exception;
+    boolean pull(String projectName, String userName, boolean importTags, boolean importTheme,
+                 boolean importImages) throws Exception;
     boolean push(String projectName, String userName) throws Exception;
     boolean commit(String projectName, String userName, List<String> changes, String message);
     Dataset getUncommitedChanges(String projectName, String userName);

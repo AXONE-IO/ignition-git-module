@@ -40,7 +40,12 @@ public class GatewayScriptModule extends AbstractScriptModule {
     }
 
     @Override
-    public boolean pullImpl(String projectName, String userName) throws Exception {
+    public boolean pullImpl(String projectName,
+                            String userName,
+                            boolean importTags,
+                            boolean importTheme,
+                            boolean importImages) throws Exception {
+
         try (Git git = getGit(getProjectFolderPath(projectName))) {
             PullCommand pull = git.pull();
             setAuthentication(pull, projectName, userName);
@@ -53,9 +58,16 @@ public class GatewayScriptModule extends AbstractScriptModule {
             }
 
             GitProjectManager.importProject(projectName);
-            GitTagManager.importTagManager(projectName);
-            GitThemeManager.importTheme(projectName);
-            GitImageManager.importImages(projectName);
+
+            if (importTags) {
+                GitTagManager.importTagManager(projectName);
+            }
+            if (importTheme) {
+                GitThemeManager.importTheme(projectName);
+            }
+            if (importImages) {
+                GitImageManager.importImages(projectName);
+            }
         } catch (GitAPIException e) {
             logger.error(e.toString());
             throw new RuntimeException(e);
@@ -121,6 +133,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Set<String> untracked = status.getUntracked();
             uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
+            Set<String> modified = status.getChanged();
+            uncommittedChangesBuilder(projectName, modified, "Modified", changes, builder);
         } catch (Exception e) {
             logger.info(e.toString(), e);
         }

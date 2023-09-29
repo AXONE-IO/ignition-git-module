@@ -2,6 +2,7 @@ package com.axone_io.ignition.git.managers;
 
 import com.axone_io.ignition.git.CommitPopup;
 import com.axone_io.ignition.git.DesignerHook;
+import com.axone_io.ignition.git.PullPopup;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.common.project.ChangeOperation;
 import com.inductiveautomation.ignition.common.project.resource.ProjectResourceId;
@@ -13,9 +14,11 @@ import java.util.List;
 import static com.axone_io.ignition.git.DesignerHook.context;
 import static com.axone_io.ignition.git.DesignerHook.rpc;
 import static com.axone_io.ignition.git.actions.GitBaseAction.handleCommitAction;
+import static com.axone_io.ignition.git.actions.GitBaseAction.handlePullAction;
 
 public class GitActionManager {
     static CommitPopup commitPopup;
+    static PullPopup pullPopup;
 
     public static Object[][] getCommitPopupData(String projectName, String userName) {
         List<ChangeOperation> changes = DesignerHook.changes;
@@ -52,6 +55,21 @@ public class GitActionManager {
                 public void onActionPerformed(List<String> changes, String commitMessage) {
                     handleCommitAction(changes, commitMessage);
                     resetMessage();
+                }
+            };
+        }
+    }
+
+    public static void showPullPopup(String projectName, String userName) {
+        if (pullPopup != null) {
+            pullPopup.setVisible(true);
+            pullPopup.toFront();
+        } else {
+            pullPopup = new PullPopup(context.getFrame()) {
+                @Override
+                public void onPullAction(boolean importTags, boolean importTheme, boolean importImages) {
+                    handlePullAction(importTags, importTheme, importImages);
+                    resetCheckboxes();
                 }
             };
         }

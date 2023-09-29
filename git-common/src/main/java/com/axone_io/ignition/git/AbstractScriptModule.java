@@ -19,8 +19,11 @@ public abstract class AbstractScriptModule implements GitScriptInterface {
     @Override
     @ScriptFunction(docBundlePrefix = "AbstractScriptModule")
     public boolean pull(@ScriptArg("projectName") String projectName,
-                        @ScriptArg("userName") String userName) throws Exception {
-        return pullImpl(projectName, userName);
+                        @ScriptArg("userName") String userName,
+                        @ScriptArg("importTags") boolean importTags,
+                        @ScriptArg("importTheme") boolean importTheme,
+                        @ScriptArg("importImages") boolean importImages) throws Exception {
+        return pullImpl(projectName, userName, importTags, importTheme, importImages);
     }
 
 
@@ -67,7 +70,8 @@ public abstract class AbstractScriptModule implements GitScriptInterface {
         setupLocalRepoImpl(projectName, userName);
     }
 
-    protected abstract boolean pullImpl(String projectName, String userName) throws Exception;
+    protected abstract boolean pullImpl(String projectName, String userName, boolean importTags, boolean importTheme,
+                                        boolean importImages) throws Exception;
     protected abstract boolean pushImpl(String projectName, String userName) throws Exception;
     protected abstract boolean commitImpl(String projectName, String userName, List<String> changes, String message);
     protected abstract Dataset getUncommitedChangesImpl(String projectName, String userName);

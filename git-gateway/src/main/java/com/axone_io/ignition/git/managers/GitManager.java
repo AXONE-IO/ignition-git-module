@@ -158,7 +158,6 @@ public class GitManager {
             String[] rowData = new String[3];
             String actor = "unknown";
             String path = update;
-            boolean toAdd = true;
 
             if (hasActor(path)) {
                 String[] pathSplitted = update.split("/");
@@ -167,16 +166,9 @@ public class GitManager {
                 actor = getActor(projectName, path);
             }
 
-            if((update.endsWith("resource.json") && countOccurrences(updates, path) < 2)
-                    || update.endsWith("project.json")){
-                if(!isUpdatedResource(projectName, update)){
-                    toAdd = false;
-                }
-            }
-
             rowData[0] = path;
             rowData[1] = type;
-            if (toAdd && !changes.contains(path)) {
+            if (!changes.contains(path)) {
                 rowData[2] = actor;
                 changes.add(path);
                 builder.addRow((Object[]) rowData);
