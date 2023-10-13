@@ -22,7 +22,7 @@ import static com.axone_io.ignition.git.managers.GitManager.clearDirectory;
 import static com.axone_io.ignition.git.managers.GitManager.getProjectFolderPath;
 
 public class GitImageManager {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitImageManager.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitImageManager.class);
 
     public static void importImages(String projectName) {
         Path projectDir = getProjectFolderPath(projectName);

@@ -30,7 +30,7 @@ import static com.axone_io.ignition.git.managers.GitManager.getProjectFolderPath
 import static com.inductiveautomation.ignition.common.tags.TagUtilities.TAG_GSON;
 
 public class GitTagManager {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitTagManager.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitTagManager.class);
 
     public static void importTagManager(String projectName) {
         Path projectDir = getProjectFolderPath(projectName);

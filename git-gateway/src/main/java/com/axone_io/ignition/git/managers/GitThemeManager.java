@@ -16,7 +16,7 @@ import java.nio.file.StandardCopyOption;
 import static com.axone_io.ignition.git.managers.GitManager.*;
 
 public class GitThemeManager {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitThemeManager.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitThemeManager.class);
 
     public static void importTheme(String projectName) {
         Path dataDir = getDataFolderPath();

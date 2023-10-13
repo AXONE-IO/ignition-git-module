@@ -30,7 +30,7 @@ import static com.axone_io.ignition.git.GatewayHook.context;
 import static com.axone_io.ignition.git.managers.GitManager.*;
 
 public class GitCommissioningUtils {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitCommissioningUtils.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitCommissioningUtils.class);
 
     public static GitCommissioningConfig config;
 

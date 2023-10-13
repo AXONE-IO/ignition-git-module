@@ -21,7 +21,7 @@ import static com.axone_io.ignition.git.GatewayHook.context;
 import static com.axone_io.ignition.git.managers.GitManager.getProjectFolderPath;
 
 public class GitProjectManager {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitProjectManager.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitProjectManager.class);
 
     public static void importProject(String projectName) {
         ProjectManager projectManager = context.getProjectManager();
