@@ -121,8 +121,7 @@ public class GitCommissioningUtils {
         }
     }
 
-
-    static protected GitCommissioningConfig parseConfigLines(byte[] ignitionConf) {
+    protected static GitCommissioningConfig parseConfigLines(byte[] ignitionConf) {
         Pattern repoUriPattern = Pattern.compile("repo.uri");
         Pattern repoBranchPattern = Pattern.compile("repo.branch");
 
