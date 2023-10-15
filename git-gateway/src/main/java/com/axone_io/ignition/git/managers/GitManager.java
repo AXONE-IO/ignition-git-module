@@ -44,9 +44,9 @@ import java.util.Set;
 import static com.axone_io.ignition.git.GatewayHook.context;
 
 public class GitManager {
-    private final static LoggerEx logger = LoggerEx.newBuilder().build(GitManager.class);
+    private static final LoggerEx logger = LoggerEx.newBuilder().build(GitManager.class);
 
-    static public Git getGit(Path projectFolderPath) {
+    public static Git getGit(Path projectFolderPath) {
         Git git;
         try {
             git = Git.open(projectFolderPath.resolve(".git").toFile());

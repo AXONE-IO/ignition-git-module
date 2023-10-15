@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class GatewayHook extends AbstractGatewayModuleHook {
-    static public String MODULE_NAME = "Git";
+    public static String MODULE_NAME = "Git";
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private GatewayScriptModule scriptModule;
