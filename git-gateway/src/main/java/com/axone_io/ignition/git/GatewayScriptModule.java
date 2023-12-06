@@ -1,14 +1,21 @@
 package com.axone_io.ignition.git;
 
 import com.axone_io.ignition.git.commissioning.utils.GitCommissioningUtils;
+import com.axone_io.ignition.git.managers.GitImageManager;
+import com.axone_io.ignition.git.managers.GitProjectManager;
+import com.axone_io.ignition.git.managers.GitTagManager;
+import com.axone_io.ignition.git.managers.GitThemeManager;
 import com.axone_io.ignition.git.records.GitProjectsConfigRecord;
 import com.inductiveautomation.ignition.common.BasicDataset;
 import com.inductiveautomation.ignition.common.Dataset;
+import com.inductiveautomation.ignition.common.project.ProjectManifest;
+import com.inductiveautomation.ignition.common.project.ProjectSnapshot;
 import com.inductiveautomation.ignition.common.util.DatasetBuilder;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
@@ -33,7 +40,12 @@ public class GatewayScriptModule extends AbstractScriptModule {
     }
 
     @Override
-    public boolean pullImpl(String projectName, String userName) throws Exception {
+    public boolean pullImpl(String projectName,
+                            String userName,
+                            boolean importTags,
+                            boolean importTheme,
+                            boolean importImages) throws Exception {
+
         try (Git git = getGit(getProjectFolderPath(projectName))) {
             PullCommand pull = git.pull();
             setAuthentication(pull, projectName, userName);
@@ -45,6 +57,17 @@ public class GatewayScriptModule extends AbstractScriptModule {
                 logger.info("Pull was successful.");
             }
 
+            GitProjectManager.importProject(projectName);
+
+            if (importTags) {
+                GitTagManager.importTagManager(projectName);
+            }
+            if (importTheme) {
+                GitThemeManager.importTheme(projectName);
+            }
+            if (importImages) {
+                GitImageManager.importImages(projectName);
+            }
         } catch (GitAPIException e) {
             logger.error(e.toString());
             throw new RuntimeException(e);
@@ -102,16 +125,23 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
+            logger.debug("Missing files: {}" + missing);
             uncommittedChangesBuilder(projectName, missing, "Deleted", changes, builder);
 
             Set<String> uncommittedChanges = status.getUncommittedChanges();
+            logger.debug("Uncommitted changes: {}" + uncommittedChanges);
             uncommittedChangesBuilder(projectName, uncommittedChanges, "Uncommitted", changes, builder);
 
             Set<String> untracked = status.getUntracked();
+            logger.debug("Untracked files: {}" + untracked);
             uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
+            Set<String> modified = status.getChanged();
+            logger.debug("Modified files: {}" + modified);
+            uncommittedChangesBuilder(projectName, modified, "Modified", changes, builder);
         } catch (Exception e) {
-            logger.info(e.toString(), e);
+            logger.error(e.toString(), e);
+
         }
         ds = builder.build();
 
@@ -148,27 +178,74 @@ public class GatewayScriptModule extends AbstractScriptModule {
         Path path = projectFolderPath.resolve(".git");
 
         if (!Files.exists(path)) {
-            String defaultBranch = GitCommissioningUtils.config != null ? GitCommissioningUtils.config.getInitDefaultBranch() : null;
-            try (Git git = Git.init().setInitialBranch(defaultBranch).setDirectory(projectFolderPath.toFile()).call()) {
+            try (Git git = Git.init().setDirectory(projectFolderPath.toFile()).call()) {
                 disableSsl(git);
 
-                git.remoteAdd().setName("origin").setUri(new URIish(gitProjectsConfigRecord.getURI())).call();
+                final URIish urIish = new URIish(gitProjectsConfigRecord.getURI());
 
-                git.add().addFilepattern(".").call();
+                git.remoteAdd().setName("origin").setUri(urIish).call();
 
-                CommitCommand commit = git.commit().setMessage("Initial commit");
-                setCommitAuthor(commit, projectName, userName);
-                commit.call();
+                FetchCommand fetch = git.fetch().setRemote("origin");
 
-                PushCommand pushCommand = git.push();
+                setAuthentication(fetch, projectName, userName);
+                fetch.call();
 
-                setAuthentication(pushCommand, projectName, userName);
+                ListBranchCommand listBranches = git.branchList();
+                listBranches.setListMode(ListBranchCommand.ListMode.REMOTE);
+                List<Ref> branches = listBranches.call();
 
-                String branch = git.getRepository().getBranch();
-                pushCommand.setRemote("origin").setRefSpecs(new RefSpec(branch)).call();
+                if (branches.isEmpty()) {
+                    setupGitFromCurrentFolder(projectName, userName, git);
+                } else {
+                    setupGitFromRemoteRepo(projectName, git);
+                }
             } catch (Exception e) {
-                logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.");
+                logger.warn("An error occurred while setting up local repo for '" + projectName + "' project.", e);
             }
+        }
+    }
+
+    private void setupGitFromCurrentFolder(String projectName, String userName, Git git) throws Exception {
+        try {
+            git.add().addFilepattern(".").call();
+
+            CommitCommand commit = git.commit().setMessage("Initial commit");
+            setCommitAuthor(commit, projectName, userName);
+            commit.call();
+
+            PushCommand pushCommand = git.push();
+
+            setAuthentication(pushCommand, projectName, userName);
+
+            String branch = git.getRepository().getBranch();
+            pushCommand.setRemote("origin").setRefSpecs(new RefSpec(branch)).call();
+        } catch (GitAPIException e) {
+            logger.error(e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setupGitFromRemoteRepo(String projectName, Git git) throws Exception {
+        try {
+            CheckoutCommand checkout = git.checkout()
+                    .setName("master")
+                    .setCreateBranch(true)
+                    .setForced(true)
+                    .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                    .setStartPoint("origin/master");
+            checkout.call();
+
+            git.clean().setForce(true).call();
+            git.reset().setMode(ResetCommand.ResetType.HARD).call();
+
+            GitTagManager.importTagManager(projectName);
+
+            GitThemeManager.importTheme(projectName);
+
+            GitImageManager.importImages(projectName);
+        } catch (GitAPIException e) {
+            logger.error(e.toString());
+            throw new RuntimeException(e);
         }
     }
 

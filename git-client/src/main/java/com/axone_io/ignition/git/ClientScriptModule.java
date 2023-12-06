@@ -17,8 +17,9 @@ public class ClientScriptModule extends AbstractScriptModule {
     }
 
     @Override
-    protected boolean pullImpl(String projectName, String userName) throws Exception {
-        return rpc.pull(projectName, userName);
+    protected boolean pullImpl(String projectName, String userName, boolean importTags, boolean importTheme,
+                               boolean importImages) throws Exception {
+        return rpc.pull(projectName, userName, importTags, importTheme, importImages);
     }
 
     @Override

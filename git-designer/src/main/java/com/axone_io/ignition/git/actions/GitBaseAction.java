@@ -1,5 +1,6 @@
 package com.axone_io.ignition.git.actions;
 
+import com.axone_io.ignition.git.managers.GitActionManager;
 import com.axone_io.ignition.git.utils.IconUtils;
 import com.inductiveautomation.ignition.client.util.action.BaseAction;
 import com.inductiveautomation.ignition.client.util.gui.ErrorUtil;
@@ -12,8 +13,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 
 import static com.axone_io.ignition.git.DesignerHook.*;
-import static com.axone_io.ignition.git.managers.GitActionManager.showCommitPopup;
-import static com.axone_io.ignition.git.managers.GitActionManager.showConfirmPopup;
+import static com.axone_io.ignition.git.managers.GitActionManager.*;
 
 public class GitBaseAction extends BaseAction {
     private static final Logger logger = LoggerFactory.getLogger(GitBaseAction.class);
@@ -34,6 +34,11 @@ public class GitBaseAction extends BaseAction {
         EXPORT(
             "DesignerHook.Actions.ExportGatewayConfig",
             "/com/axone_io/ignition/git/icons/ic_folder.svg"
+        ),
+
+        REPO(
+            "DesignerHook.Actions.Repo",
+            "/com/axone_io/ignition/git/icons/ic_repo.svg"
         );
 
         private final String baseBundleKey;
@@ -74,6 +79,18 @@ public class GitBaseAction extends BaseAction {
         }
     }
 
+    public static void handlePullAction(boolean importTags, boolean importTheme, boolean importImages) {
+        String message = BundleUtil.get().getStringLenient(GitActionType.PULL.baseBundleKey + ".ConfirmMessage");
+        int messageType = JOptionPane.INFORMATION_MESSAGE;
+
+        try {
+            rpc.pull(projectName, userName, importTags, importTheme, importImages);
+            SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
+        } catch (Exception ex) {
+            ErrorUtil.showError(ex);
+        }
+    }
+
     public static void handleAction(GitActionType type) {
         String message = BundleUtil.get().getStringLenient(type.baseBundleKey + ".ConfirmMessage");
         int messageType = JOptionPane.INFORMATION_MESSAGE;
@@ -82,7 +99,8 @@ public class GitBaseAction extends BaseAction {
         try {
             switch (type) {
                 case PULL:
-                    rpc.pull(projectName, userName);
+                    confirmPopup = Boolean.FALSE;
+                    showPullPopup(projectName, userName);
                     break;
                 case PUSH:
                     rpc.push(projectName, userName);
@@ -94,9 +112,11 @@ public class GitBaseAction extends BaseAction {
                 case EXPORT:
                     rpc.exportConfig(projectName);
                     break;
+                case REPO:
+                    openRepositoryLink();
+                    break;
             }
             if(confirmPopup) SwingUtilities.invokeLater(new Thread(() -> showConfirmPopup(message, messageType)));
-
         } catch (Exception ex) {
             ErrorUtil.showError(ex);
         }
