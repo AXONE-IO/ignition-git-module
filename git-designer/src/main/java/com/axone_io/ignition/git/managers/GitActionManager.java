@@ -90,7 +90,7 @@ public class GitActionManager {
     public static void openRepositoryLink() {
         try {
             Desktop desktop = Desktop.getDesktop();
-            String repoLink = "https://github.com/E-I-Engineering-Ltd";
+            String repoLink = "https://github.com";
             desktop.browse(new URI(repoLink)); // This line might throw IOException or URISyntaxException
         } catch (IOException | URISyntaxException e) {
             logger.error("Error opening repository link", e);
