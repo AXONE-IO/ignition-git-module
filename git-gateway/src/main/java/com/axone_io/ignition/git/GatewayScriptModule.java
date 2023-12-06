@@ -125,18 +125,23 @@ public class GatewayScriptModule extends AbstractScriptModule {
             Status status = git.status().call();
 
             Set<String> missing = status.getMissing();
+            logger.debug("Missing files: {}" + missing);
             uncommittedChangesBuilder(projectName, missing, "Deleted", changes, builder);
 
             Set<String> uncommittedChanges = status.getUncommittedChanges();
+            logger.debug("Uncommitted changes: {}" + uncommittedChanges);
             uncommittedChangesBuilder(projectName, uncommittedChanges, "Uncommitted", changes, builder);
 
             Set<String> untracked = status.getUntracked();
+            logger.debug("Untracked files: {}" + untracked);
             uncommittedChangesBuilder(projectName, untracked, "Created", changes, builder);
 
             Set<String> modified = status.getChanged();
+            logger.debug("Modified files: {}" + modified);
             uncommittedChangesBuilder(projectName, modified, "Modified", changes, builder);
         } catch (Exception e) {
-            logger.info(e.toString(), e);
+            logger.error(e.toString(), e);
+
         }
         ds = builder.build();
 

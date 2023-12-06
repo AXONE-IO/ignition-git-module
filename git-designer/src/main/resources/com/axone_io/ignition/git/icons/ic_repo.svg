@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<defs>
+<filter id="alpha" filterUnits="objectBoundingBox" x="0%" y="0%" width="100%" height="100%">
+  <feColorMatrix type="matrix" in="SourceGraphic" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
+</filter>
+<mask id="mask0">
+  <g filter="url(#alpha)">
+<rect x="0" y="0" width="16" height="16" style="fill:rgb(0%,0%,0%);fill-opacity:0.2;stroke:none;"/>
+  </g>
+</mask>
+<clipPath id="clip1">
+  <rect x="0" y="0" width="16" height="16"/>
+</clipPath>
+<g id="surface5" clip-path="url(#clip1)">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2.375 6 L 13.625 6 C 13.96875 6 14.25 6.28125 14.25 6.625 L 14.25 13.375 C 14.25 13.71875 13.96875 14 13.625 14 L 2.375 14 C 2.03125 14 1.75 13.71875 1.75 13.375 L 1.75 6.625 C 1.75 6.28125 2.03125 6 2.375 6 Z M 2.375 6 "/>
+</g>
+<mask id="mask1">
+  <g filter="url(#alpha)">
+<rect x="0" y="0" width="16" height="16" style="fill:rgb(0%,0%,0%);fill-opacity:0.2;stroke:none;"/>
+  </g>
+</mask>
+<clipPath id="clip2">
+  <rect x="0" y="0" width="16" height="16"/>
+</clipPath>
+<g id="surface8" clip-path="url(#clip2)">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2.375 5.5 L 13.625 5.5 C 13.96875 5.5 14.25 5.78125 14.25 6.125 L 14.25 12.875 C 14.25 13.21875 13.96875 13.5 13.625 13.5 L 2.375 13.5 C 2.03125 13.5 1.75 13.21875 1.75 12.875 L 1.75 6.125 C 1.75 5.78125 2.03125 5.5 2.375 5.5 Z M 2.375 5.5 "/>
+</g>
+<mask id="mask2">
+  <g filter="url(#alpha)">
+<rect x="0" y="0" width="16" height="16" style="fill:rgb(0%,0%,0%);fill-opacity:0.101961;stroke:none;"/>
+  </g>
+</mask>
+<clipPath id="clip3">
+  <rect x="0" y="0" width="16" height="16"/>
+</clipPath>
+<g id="surface11" clip-path="url(#clip3)">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 2.375 2.5 C 2.027344 2.5 1.75 2.777344 1.75 3.125 L 1.75 3.375 C 1.75 3.027344 2.027344 2.75 2.375 2.75 L 6.625 2.75 C 6.972656 2.75 7.25 3.027344 7.25 3.375 L 7.25 3.125 C 7.25 2.777344 6.972656 2.5 6.625 2.5 Z M 7.25 3.75 L 7.25 4 L 13.625 4 C 13.972656 4 14.25 4.277344 14.25 4.625 L 14.25 4.375 C 14.25 4.027344 13.972656 3.75 13.625 3.75 Z M 7.25 3.75 "/>
+</g>
+</defs>
+<g id="surface1">
+<use xlink:href="#surface5" mask="url(#mask0)"/>
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(70.980392%,56.078431%,10.588235%);fill-opacity:1;" d="M 1.75 11.125 C 1.75 11.472656 2.027344 11.75 2.375 11.75 L 13.625 11.75 C 13.972656 11.75 14.25 11.472656 14.25 11.125 L 14.25 4.375 C 14.25 4.027344 13.972656 3.75 13.625 3.75 L 7.25 3.75 L 7.25 3.125 C 7.25 2.777344 6.972656 2.5 6.625 2.5 L 2.375 2.5 C 2.027344 2.5 1.75 2.777344 1.75 3.125 "/>
+<use xlink:href="#surface8" mask="url(#mask1)"/>
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(89.411765%,89.411765%,89.411765%);fill-opacity:1;" d="M 3.125 4.5 L 12.875 4.5 C 13.21875 4.5 13.5 4.78125 13.5 5.125 L 13.5 8.875 C 13.5 9.21875 13.21875 9.5 12.875 9.5 L 3.125 9.5 C 2.78125 9.5 2.5 9.21875 2.5 8.875 L 2.5 5.125 C 2.5 4.78125 2.78125 4.5 3.125 4.5 Z M 3.125 4.5 "/>
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(88.627451%,70.196078%,13.333333%);fill-opacity:1;" d="M 2.375 5.75 L 13.625 5.75 C 13.96875 5.75 14.25 6.03125 14.25 6.375 L 14.25 13.125 C 14.25 13.46875 13.96875 13.75 13.625 13.75 L 2.375 13.75 C 2.03125 13.75 1.75 13.46875 1.75 13.125 L 1.75 6.375 C 1.75 6.03125 2.03125 5.75 2.375 5.75 Z M 2.375 5.75 "/>
+<use xlink:href="#surface11" mask="url(#mask2)"/>
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(30.980392%,24.313725%,4.705882%);fill-opacity:1;" d="M 6.601562 7 L 6.25 7.351562 L 6.824219 7.929688 C 6.777344 8.03125 6.75 8.140625 6.75 8.25 C 6.75 8.570312 6.953125 8.851562 7.25 8.957031 L 7.25 11.042969 C 6.953125 11.148438 6.753906 11.433594 6.75 11.75 C 6.75 12.164062 7.085938 12.5 7.5 12.5 C 7.914062 12.5 8.25 12.164062 8.25 11.75 C 8.25 11.433594 8.050781 11.148438 7.75 11.042969 L 7.75 8.957031 C 7.777344 8.949219 7.800781 8.9375 7.824219 8.925781 L 8.824219 9.929688 C 8.777344 10.027344 8.75 10.140625 8.75 10.25 C 8.75 10.664062 9.085938 11 9.5 11 C 9.914062 11 10.25 10.664062 10.25 10.25 C 10.25 9.835938 9.914062 9.5 9.5 9.5 C 9.390625 9.5 9.277344 9.527344 9.179688 9.574219 L 8.175781 8.574219 C 8.226562 8.472656 8.25 8.363281 8.25 8.25 C 8.25 7.835938 7.914062 7.5 7.5 7.5 C 7.390625 7.503906 7.28125 7.527344 7.179688 7.574219 Z M 6.601562 7 "/>
+</g>
+</svg>

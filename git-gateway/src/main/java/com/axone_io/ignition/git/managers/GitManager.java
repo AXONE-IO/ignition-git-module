@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
+
 
 import static com.axone_io.ignition.git.GatewayHook.context;
 
@@ -190,12 +192,27 @@ public class GitManager {
         return hasActor;
     }
 
+//    public static String getActor(String projectName, String path) {
+//        ProjectManager projectManager = context.getProjectManager();
+//        RuntimeProject project = projectManager.getProject(projectName).get();
+//
+//        ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
+//        return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+//    }
     public static String getActor(String projectName, String path) {
         ProjectManager projectManager = context.getProjectManager();
-        RuntimeProject project = projectManager.getProject(projectName).get();
+        Optional<RuntimeProject> projectOpt = projectManager.getProject(projectName);
 
-        ProjectResource projectResource = project.getResource(getResourcePath(path)).get();
-        return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+        if (projectOpt.isPresent()) {
+            RuntimeProject project = projectOpt.get();
+            Optional<ProjectResource> resourceOpt = project.getResource(getResourcePath(path));
+
+            if (resourceOpt.isPresent()) {
+                ProjectResource projectResource = resourceOpt.get();
+                return LastModification.of(projectResource).map(LastModification::getActor).orElse("unknown");
+            }
+        }
+        return "unknown";
     }
 
     public static List getAddedFiles(String projectName) {
